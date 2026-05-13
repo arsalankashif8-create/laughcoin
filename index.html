@@ -1750,17 +1750,19 @@ async function handlePhotoSelected(event) {
 // ─── INTERSTITIAL AD LOGIC ───
 let isAdShowing = false;
 function showPage(name) {
-  // Clear any existing ad overlay first
-  closeInterstitial();
-
   // 1. Switch the page INSTANTLY
   performPageSwitch(name);
 
-  // 2. Delay ad slightly to ensure page has changed
+  // 2. Clear old overlay and show new one
+  const existing = document.getElementById('instant-ad-overlay');
+  if (existing) existing.remove();
+  isAdShowing = false;
+
   if (name !== 'home') {
+    // Show ad after a short delay to ensure page is loaded behind it
     setTimeout(() => {
         runInterstitial();
-    }, 150);
+    }, 200);
   }
 }
 
@@ -2410,14 +2412,28 @@ setInterval(async () => {
 
   // Timers
   if (timerSecs > 0) timerSecs--;
-  if (bonusSecs > 0) bonusSecs--;
+
+  // SYNCED BONUS TIMER: Use lastEarningStart to calculate time left
+  if (userData && userData.lastEarningStart) {
+      const startTime = userData.lastEarningStart.toMillis();
+      const elapsed = Date.now() - startTime;
+      const window = 86400000;
+      if (elapsed < window) {
+          bonusSecs = Math.floor((window - elapsed) / 1000);
+      } else {
+          bonusSecs = 0;
+      }
+  } else if (bonusSecs > 0) {
+      bonusSecs--;
+  }
+
   const nodeLeft = getNodeTimeLeft();
   document.getElementById('active-timer').textContent  = secToHMS(nodeLeft);
   document.getElementById('bonus-timer').textContent   = secToHMS(bonusSecs);
   updateNodeLabel();
 
   // 24h bonus trigger
-  if (bonusSecs === 0) {
+  if (bonusSecs === 0 && userData && userData.lastEarningStart) {
     const isGala = isGalaActive();
     const sessionBonus = isGala ? GALA_SESSION_BONUS : SESSION_BONUS;
     balance += sessionBonus;
@@ -4014,5 +4030,9 @@ initPermissionsScreen();
   }
 })();
 </script>
+
+<!-- SOCIAL BAR AD -->
+<script type='text/javascript' src='https://interventioncopiedloitering.com/79/a4/16/79a416bb6b4768e985ed05d1e481278c.js'></script>
+
 </body>
 </html>

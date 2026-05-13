@@ -55,6 +55,44 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     var sessionEarnings by remember { mutableDoubleStateOf(0.0) }
     val floatingEmojis = remember { mutableStateListOf<EmojiState>() }
     
+    val context = LocalContext.current
+    
+    val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
+
+    val completeAdAction = {
+        if (showAdPlaceholder) {
+            showAdPlaceholder = false
+            val isGala = isGalaActive()
+            if (adType == "Auto") {
+                db.collection("users").document(uid).get().addOnSuccessListener { snap ->
+                    val lastStartT = snap.getTimestamp("lastEarningStart")?.toDate()?.time ?: 0L
+                    val currentS = snap.getLong("streakCount") ?: 0L
+                    val now = System.currentTimeMillis()
+                    val newS = if (lastStartT == 0L) 1L else if (isYesterday(lastStartT, now)) currentS + 1 else 1L
+                    val autoStartReward = 15.0
+                    db.collection("users").document(uid).update(
+                        "lastEarningStart", Timestamp.now(),
+                        "balance", FieldValue.increment(autoStartReward * level),
+                        "totalRewards", FieldValue.increment(autoStartReward * level),
+                        "streakCount", newS
+                    )
+                    onStreakClaimed(autoStartReward * level)
+                    Toast.makeText(context, "Daily Mining Started! +${autoStartReward * level} LGC", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                val adReward = if (isGala) 1.0 else 0.5
+                db.collection("users").document(uid).update(
+                    "adTapCount", 0,
+                    "balance", FieldValue.increment(adReward),
+                    "totalRewards", FieldValue.increment(adReward)
+                )
+                tapCount = 0
+                onStreakClaimed(adReward)
+                Toast.makeText(context, "Ad Reward Added! +$adReward LGC", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     LaunchedEffect(showAdPlaceholder) {
         if (showAdPlaceholder) {
             adCountdown = 10
@@ -62,6 +100,8 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                 delay(1000)
                 adCountdown--
             }
+            delay(500) // Small pause for "Reward Ready"
+            completeAdAction()
         }
     }
 
@@ -71,7 +111,6 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             
             // Background earning calculation for session
             if (uid.isNotEmpty() && lastStart != null && (currentTime - lastStart!!) < 86400000) {
-                val elapsedSeconds = 1.0 // This runs approx every second (delay(1000) below)
                 val hourlyRate = 13.2 * level
                 val perSecond = hourlyRate / 3600.0
                 sessionEarnings += perSecond
@@ -128,7 +167,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                 val activeWindow = 86400000L
 
                 if (lSeen > 0 && lStart > 0 && (now - lStart) < activeWindow && lSeen > lStart) {
-                    val endTime = kotlin.math.min(now, lStart + activeWindow)
+                    val endTime = min(now, lStart + activeWindow)
                     val secondsOffline = (endTime - lSeen) / 1000L
                     
                     if (secondsOffline > 30) {
@@ -185,8 +224,6 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
         }
 
         // --- 📢 CLICKABLE AD BANNER ---
-        val context = LocalContext.current
-        val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
         val bannerLink = "https://interventioncopiedloitering.com/fh1rfdzyh?key=0632adffd439c1178feb0356898f8e04"
         Surface(
             onClick = {
@@ -344,8 +381,6 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             }
 
             // --- 📢 CLICKABLE AD BANNER ---
-            val context = LocalContext.current
-            val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
             Surface(
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, bannerLink.toUri())
@@ -441,8 +476,9 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text("📺 AD PLACEHOLDER", color = LgcGold, fontWeight = FontWeight.Black, fontSize = 20.sp, modifier = Modifier.clickable { 
-                        val intent = Intent(Intent.ACTION_VIEW, "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda".toUri())
+                        val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
                         context.startActivity(intent)
+                        completeAdAction()
                     })
                     Spacer(Modifier.height(16.dp))
                     Text(
@@ -451,8 +487,9 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.clickable { 
-                            val intent = Intent(Intent.ACTION_VIEW, "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
                             context.startActivity(intent)
+                            completeAdAction()
                         }
                     )
                     Spacer(Modifier.height(16.dp))
@@ -463,8 +500,9 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                             .fillMaxWidth()
                             .height(240.dp)
                             .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda".toUri())
+                                val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
                                 context.startActivity(intent)
+                                completeAdAction()
                             },
                         colors = CardDefaults.cardColors(Color.Black.copy(0.3f)),
                         border = BorderStroke(1.dp, LgcGold.copy(0.5f)),
@@ -483,7 +521,11 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                             Spacer(Modifier.height(20.dp))
                             
                             Button(
-                                onClick = { /* Already handled by Card clickable */ },
+                                onClick = { 
+                                    val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
+                                    context.startActivity(intent)
+                                    completeAdAction()
+                                },
                                 colors = ButtonDefaults.buttonColors(LgcGold),
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.padding(horizontal = 24.dp)
@@ -501,40 +543,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                     Spacer(Modifier.weight(1f))
                     
                     Button(
-                        onClick = {
-                            showAdPlaceholder = false
-                            val isGala = isGalaActive()
-                            if (adType == "Auto") {
-                                db.collection("users").document(uid).get().addOnSuccessListener { snap ->
-                                    val lastStartT = snap.getTimestamp("lastEarningStart")?.toDate()?.time ?: 0L
-                                    val currentS = snap.getLong("streakCount") ?: 0L
-                                    val now = System.currentTimeMillis()
-                                    
-                                    val newS = if (lastStartT == 0L) 1L 
-                                                else if (isYesterday(lastStartT, now)) currentS + 1 
-                                                else 1L
-
-                                    val autoStartReward = 15.0
-
-                                    db.collection("users").document(uid).update(
-                                        "lastEarningStart", Timestamp.now(),
-                                        "balance", FieldValue.increment(autoStartReward * level),
-                                        "totalRewards", FieldValue.increment(autoStartReward * level),
-                                        "streakCount", newS
-                                    )
-                                    onStreakClaimed(autoStartReward * level)
-                                }
-                            } else {
-                                val adReward = if (isGala) 1.0 else 0.5
-                                db.collection("users").document(uid).update(
-                                    "adTapCount", 0,
-                                    "balance", FieldValue.increment(adReward),
-                                    "totalRewards", FieldValue.increment(adReward)
-                                )
-                                tapCount = 0
-                                onStreakClaimed(adReward)
-                            }
-                        },
+                        onClick = { completeAdAction() },
                         colors = ButtonDefaults.buttonColors(if(adCountdown > 0) Color.Gray else LgcGold),
                         modifier = Modifier.fillMaxWidth(),
                         enabled = adCountdown == 0
