@@ -151,7 +151,7 @@ fun AuthScreen(navController: NavHostController, onLoginSuccess: () -> Unit) {
                 isLoading = true
                 val credentialManager = CredentialManager.create(context)
                 val googleIdOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
+                    .setFilterByAuthorizedAccounts(true)
                     .setServerClientId("293022314378-0t2j1t24aiqj03gcl166fnsqj2iiff1f.apps.googleusercontent.com")
                     .setAutoSelectEnabled(false)
                     .build()
