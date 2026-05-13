@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "source": "laughcoin-functions",
+    "runtime": "nodejs22"
+  }
+}
