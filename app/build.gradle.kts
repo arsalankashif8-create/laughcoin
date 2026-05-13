@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.firebase.appcheck)
     implementation(libs.firebase.appcheck.debug)
     implementation(libs.firebase.appcheck.playintegrity)
+    implementation(libs.firebase.config)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)

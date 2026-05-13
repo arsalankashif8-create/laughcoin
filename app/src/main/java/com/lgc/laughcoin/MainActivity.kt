@@ -38,6 +38,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.remoteConfigSettings
 import com.google.gson.Gson
 import com.lgc.laughcoin.ui.screens.*
 import com.lgc.laughcoin.ui.theme.*
@@ -54,6 +56,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Initialize Remote Config
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        val configSettings = remoteConfigSettings {
+            minimumFetchIntervalInSeconds = 3600
+        }
+        remoteConfig.setConfigSettingsAsync(configSettings)
+        remoteConfig.setDefaultsAsync(mapOf(
+            "current_version_code" to 1L,
+            "update_url" to "https://laughcoin.online/laughcoin.apk",
+            "force_update" to false
+        ))
+        remoteConfig.fetchAndActivate()
 
         // Initialize App Check (Debug for local, Play Integrity for production)
         val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
@@ -206,6 +221,58 @@ fun MainAppScreen() {
                 delay(120000)
             }
         }
+    }
+
+    // --- 🚀 REAL-TIME UPDATE CHECKER ---
+    var showUpdatePopup by remember { mutableStateOf(false) }
+    var updateUrl by remember { mutableStateOf("https://laughcoin.online/laughcoin.apk") }
+    var isForceUpdate by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val remoteConfig = FirebaseRemoteConfig.getInstance()
+        remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val latestVersionCode = remoteConfig.getLong("current_version_code")
+                updateUrl = remoteConfig.getString("update_url")
+                isForceUpdate = remoteConfig.getBoolean("force_update")
+                
+                val currentVersionCode = try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
+                    } else {
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionCode.toLong()
+                    }
+                } catch (e: Exception) { 0L }
+
+                if (latestVersionCode > currentVersionCode) {
+                    showUpdatePopup = true
+                }
+            }
+        }
+    }
+
+    if (showUpdatePopup) {
+        AlertDialog(
+            onDismissRequest = { if (!isForceUpdate) showUpdatePopup = false },
+            title = { Text("Update Available! 🚀") },
+            text = { Text("A new version of LaughCoin is available with new rewards and features. Download now to keep earning!") },
+            confirmButton = {
+                Button(onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, updateUrl.toUri())
+                    context.startActivity(intent)
+                }, colors = ButtonDefaults.buttonColors(LgcGold)) {
+                    Text("DOWNLOAD APK", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                if (!isForceUpdate) {
+                    TextButton(onClick = { showUpdatePopup = false }) { Text("LATER", color = Color.Gray) }
+                }
+            },
+            containerColor = CyberBlue,
+            titleContentColor = LgcGold,
+            textContentColor = Color.White
+        )
     }
     
     // --- 🔐 PERMISSIONS HANDLER (Runs for all users) ---
@@ -384,10 +451,8 @@ fun MainAppScreen() {
                         NavigationBarItem(
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = { 
-                                // Route through Interstitial Ad first
-                                navController.navigate("${Screen.AdInterstitial.route}/${screen.route}") { 
-                                    popUpTo(navController.graph.startDestinationId) 
-                                } 
+                                // Reset timer for the ad screen and navigate
+                                navController.navigate("${Screen.AdInterstitial.route}/${screen.route}")
                             },
                             icon = { Text(screen.icon, fontSize = 20.sp) },
                             label = { Text(screen.title, fontSize = 10.sp, color = Color.White) },
@@ -451,6 +516,7 @@ fun MainAppScreen() {
 fun AdInterstitialScreen(navController: androidx.navigation.NavController, targetRoute: String) {
     var timeLeft by remember { mutableIntStateOf(5) }
     val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         while (timeLeft > 0) {
@@ -462,30 +528,95 @@ fun AdInterstitialScreen(navController: androidx.navigation.NavController, targe
         }
     }
 
-    Box(Modifier.fillMaxSize().background(CyberDark), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("SECURE REWARD LINK", color = Color.Gray, fontSize = 10.sp)
-            Spacer(Modifier.height(16.dp))
-            
-            // Seamless WebView for Ad
-            // Security Note: JavaScript is enabled only to support the ad network link provided by the developer.
-            androidx.compose.ui.viewinterop.AndroidView(
-                factory = { context ->
-                    android.webkit.WebView(context).apply {
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(0.9f))
+            .clickable(enabled = false) {}, 
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("SPONSORED AD", color = LgcGold, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                Surface(
+                    color = if(timeLeft > 0) Color.Gray else LgcGold,
+                    shape = RoundedCornerShape(8.dp),
+                    onClick = {
+                        if (timeLeft <= 0) {
+                            navController.navigate(targetRoute) {
+                                popUpTo(Screen.AdInterstitial.route) { inclusive = true }
+                            }
                         }
-                        webViewClient = android.webkit.WebViewClient()
-                        loadUrl(adLink)
                     }
-                },
-                modifier = Modifier.fillMaxWidth(0.9f).height(450.dp).clip(RoundedCornerShape(16.dp))
-            )
+                ) {
+                    Text(
+                        text = if(timeLeft > 0) "CLOSE IN ${timeLeft}s" else "CLOSE AD ✕",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        color = Color.Black,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
-            Spacer(Modifier.height(24.dp))
-            Text("Loading Page in ${timeLeft}s...", color = LgcGold, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("Please wait for your session to sync", color = Color.Gray, fontSize = 12.sp)
+            Spacer(Modifier.height(20.dp))
+            
+            // Full Screen Ad Content
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
+                        context.startActivity(intent)
+                    },
+                colors = CardDefaults.cardColors(CyberBlue),
+                border = BorderStroke(2.dp, LgcGold),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx ->
+                            android.webkit.WebView(ctx).apply {
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                webViewClient = android.webkit.WebViewClient()
+                                loadUrl(adLink)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    
+                    // Overlay to ensure clicks go to the sponsor link if needed, 
+                    // or just let the WebView handle it.
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+            
+            Button(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth().height(55.dp),
+                colors = ButtonDefaults.buttonColors(LgcGold),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("VISIT SPONSOR TO SYNC REWARDS", color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+            
+            Spacer(Modifier.height(10.dp))
+            Text("Your session is being verified...", color = Color.Gray, fontSize = 10.sp)
         }
     }
 }
@@ -584,6 +715,7 @@ fun handleReferral(firebaseUser: com.google.firebase.auth.FirebaseUser?, uid: St
         "lastEarningStart" to null,
         "streakCount" to 1L,
         "lastLoginDate" to Timestamp.now(),
+        "joinDate" to Timestamp.now(),
         "kycStatus" to "unverified",
         "completedTasks" to emptyList<String>(),
         "inviteCode" to uid.take(8).uppercase(),

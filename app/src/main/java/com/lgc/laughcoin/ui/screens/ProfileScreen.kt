@@ -29,11 +29,13 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.Timestamp
 import com.lgc.laughcoin.Screen
 import com.lgc.laughcoin.ui.theme.*
 import android.Manifest
 import androidx.compose.ui.text.style.TextAlign
 import java.util.Locale
+import java.text.SimpleDateFormat
 
 @Composable
 fun ProfileScreen(navController: NavHostController, onLogout: () -> Unit) {
@@ -48,6 +50,8 @@ fun ProfileScreen(navController: NavHostController, onLogout: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
     var profileImageUrl by remember { mutableStateOf("") }
+    var joinDate by remember { mutableStateOf<Timestamp?>(null) }
+    var referrals by remember { mutableLongStateOf(0L) }
     var isEditing by remember { mutableStateOf(false) }
     var isUploading by remember { mutableStateOf(false) }
 
@@ -130,10 +134,15 @@ fun ProfileScreen(navController: NavHostController, onLogout: () -> Unit) {
                     phone = snap.getString("phone") ?: ""
                     profileImageUrl = snap.getString("profileImageUrl") ?: ""
                     inviteCode = snap.getString("inviteCode") ?: uid.take(8).uppercase()
+                    joinDate = snap.getTimestamp("joinDate")
+                    referrals = snap.getLong("referrals") ?: 0L
                 }
             }
         }
     }
+
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.US) }
+    val formattedDate = joinDate?.toDate()?.let { dateFormatter.format(it) } ?: "N/A"
 
     Column(Modifier.fillMaxSize().background(CyberDark).padding(24.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
         @Suppress("DEPRECATION")
@@ -192,6 +201,14 @@ fun ProfileScreen(navController: NavHostController, onLogout: () -> Unit) {
         } else {
             Text(name, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Text(email, color = Color.Gray, fontSize = 14.sp)
+            
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Joined: $formattedDate", color = LgcGold.copy(0.7f), fontSize = 11.sp)
+                Spacer(Modifier.width(12.dp))
+                Text("Referrals: $referrals", color = CyberGreen.copy(0.7f), fontSize = 11.sp)
+            }
+
             Spacer(Modifier.height(16.dp))
             OutlinedButton(onClick = { isEditing = true }, modifier = Modifier.fillMaxWidth()) { Text("EDIT PROFILE", color = Color.White) }
         }
