@@ -1778,12 +1778,12 @@ function runInterstitial(onComplete) {
     <div style="width:100%; max-width:360px; height:400px; background:#000; border:1px solid var(--gold); border-radius:16px; overflow:hidden; margin-bottom:20px; box-shadow:var(--glow);">
         <iframe src="${AD_SMART_LINK}" style="width:100%; height:100%; border:none;"></iframe>
     </div>
-    <div style="font-family:'Orbitron',monospace; font-size:16px; color:var(--gold); margin-bottom:8px;" id="int-timer">Unlocking Page in 5s...</div>
+    <div style="font-family:'Orbitron',monospace; font-size:16px; color:var(--gold); margin-bottom:8px;" id="int-timer">Unlocking Page in 10s...</div>
     <button id="int-close-btn" onclick="closeInterstitial()" style="display:none; background:var(--gold); color:#000; border:none; padding:10px 30px; border-radius:12px; font-weight:900; font-family:'Orbitron'; cursor:pointer;">CONTINUE TO PAGE</button>
   `;
   document.body.appendChild(overlay);
 
-  let count = 5;
+  let count = 10;
   const t = setInterval(() => {
     count--;
     const timerEl = document.getElementById('int-timer');
