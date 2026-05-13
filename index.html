@@ -1504,11 +1504,11 @@
         <div class="modal-body" style="color:var(--text)">
           <div id="social-task-instructions"></div>
           <div style="margin-top:16px; padding:12px; background:rgba(240,192,0,0.1); border:1px solid var(--border); border-radius:10px;">
-            <div style="color:var(--gold); font-weight:800; font-size:12px; margin-bottom:4px;">⚠️ VERIFICATION REQUIRED:</div>
-            <div style="font-size:11px; color:var(--muted); line-height:1.5;">You MUST send your post link to our Referral Squad Group for manual verification. Accounts claiming rewards without proof will be banned.</div>
+            <div style="color:var(--gold); font-weight:800; font-size:12px; margin-bottom:4px;">⚠️ MANUAL VERIFICATION:</div>
+            <div style="font-size:11px; color:var(--muted); line-height:1.5;">You MUST send your post link to our WhatsApp Verification Group. Our team will check it and manually add your reward within 24 hours.</div>
           </div>
         </div>
-        <button class="withdraw-btn" style="margin-top:20px;" onclick="submitSocialTask()">SUBMIT PROOF & CLAIM</button>
+        <button class="withdraw-btn" style="margin-top:20px;" onclick="submitSocialTask()">OPEN WHATSAPP GROUP</button>
         <button class="modal-close" style="background:transparent; border:1px solid var(--border); color:var(--muted); margin-top:10px;" onclick="closeSocialTaskModal()">Cancel</button>
       </div>
     </div>
@@ -1883,41 +1883,14 @@ function closeSocialTaskModal() {
 
 async function submitSocialTask() {
   if (!currentUser || !activeSocialTask) return;
-  const task = SOCIAL_TASKS[activeSocialTask];
   const taskId = activeSocialTask + '_task';
 
-  // Open telegram
-  window.open('https://t.me/laughcoinupdate', '_blank');
+  // Open WhatsApp Group
+  window.open('https://chat.whatsapp.com/Co1gNV1T35ELAhG5i7v3Lf', '_blank');
 
-  try {
-    const newBal = balance + task.reward;
-    const completed = userData.completedTasks || [];
-    completed.push(taskId);
-
-    const txList = userData.transactions || [];
-    txList.push({ label: `Task: ${task.title}`, amount: task.reward, ts: Date.now() });
-
-    await db.collection('users').doc(currentUser.uid).update({
-      balance: newBal,
-      completedTasks: completed,
-      transactions: txList
-    });
-
-    balance = newBal;
-    userData.balance = newBal;
-    userData.completedTasks = completed;
-    userData.transactions = txList;
-
-    updateUI();
-    renderTxHistory();
-    closeSocialTaskModal();
-    updateTaskBadges();
-
-    toast(`✅ ${task.reward} LGC Reward Claimed!`);
-  } catch(e) {
-    console.error(e);
-    toast('❌ Error claiming reward');
-  }
+  // Close modal and notify user
+  closeSocialTaskModal();
+  toast('✅ Link Opened! Send proof to the group for manual verification.');
 }
 
 function updateTaskBadges() {
