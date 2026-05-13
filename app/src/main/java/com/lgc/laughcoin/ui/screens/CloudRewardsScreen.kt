@@ -53,6 +53,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     var adType by remember { mutableStateOf("") } 
     var adCountdown by remember { mutableIntStateOf(10) }
     var sessionEarnings by remember { mutableDoubleStateOf(0.0) }
+    var unSyncedEarnings by remember { mutableDoubleStateOf(0.0) }
     val floatingEmojis = remember { mutableStateListOf<EmojiState>() }
     
     val context = LocalContext.current
@@ -114,17 +115,19 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                 val hourlyRate = 13.2 * level
                 val perSecond = hourlyRate / 3600.0
                 sessionEarnings += perSecond
+                unSyncedEarnings += perSecond
                 
-                // NEW: Save to Firestore every 30 seconds to prevent loss and match web
-                if (System.currentTimeMillis() % 30000 < 1000) {
-                     db.runTransaction { transaction ->
-                         val snapshot = transaction.get(db.collection("users").document(uid))
-                         val firestoreBal = snapshot.getDouble("balance") ?: 0.0
-                         // Only update if our local calculation is ahead (prevents overwriting web)
-                         if (balance > firestoreBal) {
-                             transaction.update(db.collection("users").document(uid), "balance", balance)
-                         }
-                         transaction.update(db.collection("users").document(uid), "lastSeen", System.currentTimeMillis())
+                // NEW: Increment Firestore every 30 seconds with just the DELTA (prevents loss)
+                if (System.currentTimeMillis() % 30000 < 1000 && unSyncedEarnings > 0.001) {
+                     val syncDelta = unSyncedEarnings
+                     unSyncedEarnings = 0.0
+                     db.collection("users").document(uid).update(
+                         "balance", FieldValue.increment(syncDelta),
+                         "totalRewards", FieldValue.increment(syncDelta),
+                         "lastSeen", System.currentTimeMillis()
+                     ).addOnFailureListener {
+                         // If update fails, put the delta back to try again next time
+                         unSyncedEarnings += syncDelta
                      }
                 }
             }
@@ -141,8 +144,25 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             db.collection("users").document(uid).addSnapshotListener { snap, _ ->
                 if (snap != null && snap.exists()) {
                     balance = snap.getDouble("balance") ?: 0.0
-                    level = snap.getLong("rewardLevel")?.toInt() ?: 1
                     
+                    // --- 🔄 UNIFY UPGRADES (App-Web Sync) ---
+                    val upgrades = snap.get("upgrades") as? Map<String, Any> ?: emptyMap()
+                    val webLevel = when {
+                        upgrades["hyper"] == true -> 4
+                        upgrades["quantum"] == true -> 3
+                        upgrades["turbo"] == true -> 2
+                        else -> 1
+                    }
+                    val firestoreLevel = snap.getLong("rewardLevel")?.toInt() ?: 1
+                    
+                    // Always take the highest level between the two to prevent loss
+                    level = maxOf(firestoreLevel, webLevel)
+                    
+                    // If they are out of sync, fix Firestore automatically
+                    if (firestoreLevel < webLevel) {
+                        db.collection("users").document(uid).update("rewardLevel", webLevel)
+                    }
+
                     // Unified start time check
                     val fStart = snap.getTimestamp("lastEarningStart")?.toDate()?.time
                     val fExp = snap.getLong("nodeExp")
@@ -339,8 +359,8 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                         if (tapCount < 40) {
                             tapCount++
                             db.collection("users").document(uid).update(
-                                "balance", FieldValue.increment(tapReward * level),
-                                "totalRewards", FieldValue.increment(tapReward * level),
+                                "balance", FieldValue.increment(tapReward),
+                                "totalRewards", FieldValue.increment(tapReward),
                                 "totalTaps", FieldValue.increment(1),
                                 "adTapCount", tapCount
                             )
@@ -415,13 +435,25 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             Text("⚡ SYSTEM UPGRADES", color = LgcGold, fontWeight = FontWeight.Black, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             UpgradeItem("Meme Turbo", "x2 boost", 50.0, balance, level, 2) {
-                if (balance >= 50.0) db.collection("users").document(uid).update("balance", balance - 50.0, "rewardLevel", 2)
+                if (balance >= 50.0) db.collection("users").document(uid).update(
+                    "balance", FieldValue.increment(-50.0),
+                    "rewardLevel", 2,
+                    "upgrades.turbo", true
+                )
             }
             UpgradeItem("Giggle Engine", "x3 boost", 150.0, balance, level, 3) {
-                if (balance >= 150.0) db.collection("users").document(uid).update("balance", balance - 150.0, "rewardLevel", 3)
+                if (balance >= 150.0) db.collection("users").document(uid).update(
+                    "balance", FieldValue.increment(-150.0),
+                    "rewardLevel", 3,
+                    "upgrades.quantum", true
+                )
             }
             UpgradeItem("LOL Rig", "x5 boost", 400.0, balance, level, 4) {
-                if (balance >= 400.0) db.collection("users").document(uid).update("balance", balance - 400.0, "rewardLevel", 4)
+                if (balance >= 400.0) db.collection("users").document(uid).update(
+                    "balance", FieldValue.increment(-400.0),
+                    "rewardLevel", 4,
+                    "upgrades.hyper", true
+                )
             }
 
             Spacer(Modifier.height(32.dp))

@@ -178,10 +178,9 @@ fun AuthScreen(navController: NavHostController, onLoginSuccess: () -> Unit) {
                                 .addOnSuccessListener { result ->
                                     val isNewUser = result.additionalUserInfo?.isNewUser ?: false
                                     if (isNewUser) {
-                                        // For Google users, we set bonusPending to false immediately because they are pre-verified
+                                        // For Google users, we set bonusPending to true and let handleReferral create the doc.
+                                        // The reward logic in MainActivity will pick it up since Google accounts are pre-verified.
                                         handleReferral(result.user, result.user?.uid ?: "", inviteCode.trim(), result.user?.email ?: "")
-                                        FirebaseFirestore.getInstance().collection("users").document(result.user?.uid ?: "")
-                                            .update("bonusPending", false)
                                     }
                                     isLoading = false
                                     onLoginSuccess() 

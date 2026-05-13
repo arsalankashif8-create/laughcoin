@@ -729,15 +729,15 @@ fun handleReferral(firebaseUser: com.google.firebase.auth.FirebaseUser?, uid: St
             if (!snapshot.isEmpty) {
                 val refDoc = snapshot.documents[0]
                 data["referredBy"] = refDoc.id
-                db.collection("users").document(uid).set(data)
+                db.collection("users").document(uid).set(data, SetOptions.merge())
             } else {
-                db.collection("users").document(uid).set(data)
+                db.collection("users").document(uid).set(data, SetOptions.merge())
             }
         }.addOnFailureListener {
-            db.collection("users").document(uid).set(data)
+            db.collection("users").document(uid).set(data, SetOptions.merge())
         }
     } else {
-        db.collection("users").document(uid).set(data)
+        db.collection("users").document(uid).set(data, SetOptions.merge())
     }
 }
 
