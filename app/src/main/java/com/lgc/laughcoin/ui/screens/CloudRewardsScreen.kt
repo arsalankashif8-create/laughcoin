@@ -146,6 +146,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                     balance = snap.getDouble("balance") ?: 0.0
                     
                     // --- 🔄 UNIFY UPGRADES (App-Web Sync) ---
+                    @Suppress("UNCHECKED_CAST")
                     val upgrades = snap.get("upgrades") as? Map<String, Any> ?: emptyMap()
                     val webLevel = when {
                         upgrades["hyper"] == true -> 4
@@ -680,52 +681,46 @@ fun SocialTaskCard(title: String, reward: String, icon: String, taskId: String, 
     val auth = FirebaseAuth.getInstance()
     val uid = auth.currentUser?.uid ?: ""
     val context = LocalContext.current
-    var isDone by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
+    val isDone = remember { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(uid) {
         if (uid.isNotEmpty()) {
             db.collection("users").document(uid).get().addOnSuccessListener { 
                 @Suppress("UNCHECKED_CAST")
                 val completedTasks = it.get("completedTasks") as? List<String> ?: emptyList()
-                isDone = completedTasks.contains(taskId)
+                isDone.value = completedTasks.contains(taskId)
             }
         }
     }
 
-    if (showDialog) {
+    if (showDialog.value) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showDialog.value = false },
             title = { Text(title, fontWeight = FontWeight.Bold) },
             text = { 
                 Column {
                     Text(instructions)
                     Spacer(Modifier.height(12.dp))
-                    Text("⚠️ VERIFICATION REQUIRED:", color = LgcGold, fontWeight = FontWeight.Black, fontSize = 12.sp)
-                    Text("You MUST send your post link to our Referral Squad Group for manual verification. Accounts claiming rewards without proof will be banned.", color = Color.White, fontSize = 11.sp)
+                    Text("⚠️ MANUAL VERIFICATION:", color = LgcGold, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text("You MUST send your post link to our WhatsApp Verification Group. Our team will check it and manually add your reward within 24 hours.", color = Color.White, fontSize = 11.sp)
                 }
             },
-            confirmButton = {
+                    confirmButton = {
                 Button(
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, "https://t.me/laughcoinupdate".toUri()) 
+                        val whatsappLink = "https://chat.whatsapp.com/Co1gNV1T35ELAhG5i7v3Lf"
+                        val intent = Intent(Intent.ACTION_VIEW, whatsappLink.toUri()) 
                         context.startActivity(intent)
                         
-                        db.collection("users").document(uid).update(
-                            "balance", FieldValue.increment(rewardAmount),
-                            "totalRewards", FieldValue.increment(rewardAmount),
-                            "completedTasks", FieldValue.arrayUnion(taskId)
-                        ).addOnSuccessListener { 
-                            isDone = true
-                            showDialog = false
-                            Toast.makeText(context, "Reward Added! Please send proof to the group.", Toast.LENGTH_LONG).show()
-                        }
+                        showDialog.value = false
+                        Toast.makeText(context, "Link Opened! Send your proof to the WhatsApp group for manual verification.", Toast.LENGTH_LONG).show()
                     },
                     colors = ButtonDefaults.buttonColors(CyberGreen)
-                ) { Text("SUBMIT PROOF", color = Color.Black, fontWeight = FontWeight.Bold) }
+                ) { Text("OPEN GROUP", color = Color.Black, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text("LATER", color = Color.Gray) }
+                TextButton(onClick = { showDialog.value = false }) { Text("LATER", color = Color.Gray) }
             },
             containerColor = CyberBlue,
             titleContentColor = LgcGold,
@@ -735,8 +730,8 @@ fun SocialTaskCard(title: String, reward: String, icon: String, taskId: String, 
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(if(isDone) Color.Gray.copy(0.1f) else CyberBlue.copy(0.5f)),
-        border = BorderStroke(1.dp, if(isDone) Color.Transparent else LgcGold.copy(0.2f))
+        colors = CardDefaults.cardColors(if(isDone.value) Color.Gray.copy(0.1f) else CyberBlue.copy(0.5f)),
+        border = BorderStroke(1.dp, if(isDone.value) Color.Transparent else LgcGold.copy(0.2f))
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(icon, fontSize = 24.sp)
@@ -747,12 +742,12 @@ fun SocialTaskCard(title: String, reward: String, icon: String, taskId: String, 
             }
             Spacer(Modifier.weight(1f))
             Button(
-                onClick = { showDialog = true },
+                onClick = { showDialog.value = true },
                 modifier = Modifier.height(32.dp),
-                colors = ButtonDefaults.buttonColors(if(isDone) Color.DarkGray else CyberGreen),
-                enabled = !isDone
+                colors = ButtonDefaults.buttonColors(if(isDone.value) Color.DarkGray else CyberGreen),
+                enabled = !isDone.value
             ) {
-                Text(if(isDone) "DONE" else "START", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(if(isDone.value) "DONE" else "START", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
