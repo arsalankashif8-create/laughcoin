@@ -240,6 +240,7 @@ fun MainAppScreen() {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                         context.packageManager.getPackageInfo(context.packageName, 0).longVersionCode
                     } else {
+                        @Suppress("DEPRECATION")
                         context.packageManager.getPackageInfo(context.packageName, 0).versionCode.toLong()
                     }
                 } catch (e: Exception) { 0L }
@@ -514,7 +515,7 @@ fun MainAppScreen() {
 
 @Composable
 fun AdInterstitialScreen(navController: androidx.navigation.NavController, targetRoute: String) {
-    var timeLeft by remember { mutableIntStateOf(5) }
+    var timeLeft by remember { mutableIntStateOf(10) }
     val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
     val context = LocalContext.current
 
