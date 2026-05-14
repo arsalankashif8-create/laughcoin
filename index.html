@@ -1752,55 +1752,16 @@ let isAdShowing = false;
 function showPage(name) {
   // 1. Switch the page INSTANTLY
   performPageSwitch(name);
-
-  // 2. Clear old overlay and show new one
-  const existing = document.getElementById('instant-ad-overlay');
-  if (existing) existing.remove();
-  isAdShowing = false;
-
-  if (name !== 'home') {
-    // Show ad after a short delay to ensure page is loaded behind it
-    setTimeout(() => {
-        runInterstitial();
-    }, 200);
-  }
 }
 
 function runInterstitial(onComplete) {
-  if (isAdShowing) return;
-  isAdShowing = true;
-
-  const overlay = document.createElement('div');
-  overlay.id = "instant-ad-overlay";
-  overlay.style.cssText = "position:fixed; inset:0; background:rgba(6, 13, 26, 0.95); z-index:1000000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; backdrop-filter: blur(5px);";
-  overlay.innerHTML = `
-    <div style="font-size:10px; color:var(--muted); margin-bottom:10px; letter-spacing:2px;">SECURE REWARD LINK</div>
-    <div style="width:100%; max-width:360px; height:400px; background:#000; border:1px solid var(--gold); border-radius:16px; overflow:hidden; margin-bottom:20px; box-shadow:var(--glow);">
-        <iframe src="${AD_SMART_LINK}" style="width:100%; height:100%; border:none;"></iframe>
-    </div>
-    <div style="font-family:'Orbitron',monospace; font-size:16px; color:var(--gold); margin-bottom:8px;" id="int-timer">Unlocking Page in 10s...</div>
-    <button id="int-close-btn" onclick="closeInterstitial()" style="display:none; background:var(--gold); color:#000; border:none; padding:10px 30px; border-radius:12px; font-weight:900; font-family:'Orbitron'; cursor:pointer;">CONTINUE TO PAGE</button>
-  `;
-  document.body.appendChild(overlay);
-
-  let count = 10;
-  const t = setInterval(() => {
-    count--;
-    const timerEl = document.getElementById('int-timer');
-    if (timerEl) timerEl.textContent = `Unlocking Page in ${count}s...`;
-    if (count <= 0) {
-      clearInterval(t);
-      if (timerEl) timerEl.style.display = 'none';
-      const btn = document.getElementById('int-close-btn');
-      if (btn) btn.style.display = 'block';
-    }
-  }, 1000);
+  // AD REMOVED AS REQUESTED
+  if (typeof onComplete === 'function') onComplete();
 }
 
 function closeInterstitial() {
   const overlay = document.getElementById('instant-ad-overlay');
   if (overlay) overlay.remove();
-  isAdShowing = false;
 }
 
 function performPageSwitch(name) {
