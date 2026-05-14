@@ -22,7 +22,7 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="com.lgc.laughcoin" />
+                  <option name="appId" value="com.lgcinovations.laughcoin" />
                   <option name="mobileSdkAppId" value="1:293022314378:android:b71819661772d85bffe273" />
                   <option name="projectId" value="laughcoin-app" />
                   <option name="projectNumber" value="293022314378" />

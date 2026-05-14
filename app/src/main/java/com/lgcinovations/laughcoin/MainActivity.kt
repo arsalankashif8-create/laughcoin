@@ -149,6 +149,9 @@ fun MainAppScreen() {
     val navController = rememberNavController()
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
+
+    // --- 📢 SESSION AD TRACKER ---
+    val hasShownSessionAd = remember { mutableStateOf(false) }
     
     // --- 🎁 GLOBAL STREAK REWARD POPUP ---
     var showStreakPopup by remember { mutableStateOf<Double?>(null) }
@@ -452,8 +455,12 @@ fun MainAppScreen() {
                         NavigationBarItem(
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = { 
-                                // Reset timer for the ad screen and navigate
-                                navController.navigate("${Screen.AdInterstitial.route}/${screen.route}")
+                                // DIRECT NAVIGATION - Ads removed from tab switching
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             },
                             icon = { Text(screen.icon, fontSize = 20.sp) },
                             label = { Text(screen.title, fontSize = 10.sp, color = Color.White) },
@@ -465,8 +472,22 @@ fun MainAppScreen() {
         }
     ) { padding ->
         NavHost(navController, startDestination, Modifier.padding(padding)) {
-            composable(Screen.Auth.route) { AuthScreen(navController) { navController.navigate(Screen.Home.route) { popUpTo(0) } } }
-            composable(Screen.Home.route) { HomeScreen() }
+            composable(Screen.Auth.route) { 
+                AuthScreen(navController) { 
+                    // Navigate through ad screen after login/signup
+                    navController.navigate("${Screen.AdInterstitial.route}/${Screen.Home.route}") { popUpTo(0) } 
+                } 
+            }
+            composable(Screen.Home.route) { 
+                // Show ad once when user returns to home if not shown this session
+                LaunchedEffect(Unit) {
+                    if (!hasShownSessionAd.value) {
+                        hasShownSessionAd.value = true
+                        navController.navigate("${Screen.AdInterstitial.route}/${Screen.Home.route}")
+                    }
+                }
+                HomeScreen() 
+            }
             composable(Screen.Rewards.route) { CloudRewardsScreen { showStreakPopup = it } }
             composable(Screen.Leaders.route) { LeadersScreen() }
             composable(Screen.Wallet.route) { WalletScreen() }

@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:293022314378:android:b71819661772d85bffe273",
         "android_client_info": {
-          "package_name": "com.lgcinovations.laughcoin"
+          "package_name": "com.lgc.laughcoin"
         }
       },
       "oauth_client": [
@@ -18,7 +18,7 @@
           "client_id": "293022314378-koojrtfmvv29vqql6nuk9hav1lcq9j2h.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.lgcinovations.laughcoin",
+            "package_name": "com.lgc.laughcoin",
             "certificate_hash": "1a80c4ca58cbcaa58b74baab990c6a61f0a1e65e"
           }
         },
@@ -26,7 +26,7 @@
           "client_id": "293022314378-rosjvoelrdo1jk4qi9luklsp0gat3j14.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.lgcinovations.laughcoin",
+            "package_name": "com.lgc.laughcoin",
             "certificate_hash": "0f16f0e92d9f24cada3bef33b6fdacf6471f2c8b"
           }
         },
@@ -59,6 +59,43 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "293022314378-0t2j1t24aiqj03gcl166fnsqj2iiff1f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3M1RVw1hkNRT7_vYUAS9t-Mp90J4mr_E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "293022314378-0t2j1t24aiqj03gcl166fnsqj2iiff1f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293022314378:android:e8f07a1c56903c75ffe273",
+        "android_client_info": {
+          "package_name": "com.lgcinovations.laughcoin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "293022314378-7uuj2066h8p8sh65c6r5apeaedjc2ge1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lgcinovations.laughcoin",
+            "certificate_hash": "9a30a0a1ebc413d344a7a5fb51bd8e6724b50cbf"
+          }
+        },
         {
           "client_id": "293022314378-0t2j1t24aiqj03gcl166fnsqj2iiff1f.apps.googleusercontent.com",
           "client_type": 3
