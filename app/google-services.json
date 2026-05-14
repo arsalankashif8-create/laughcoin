@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:293022314378:android:b71819661772d85bffe273",
         "android_client_info": {
-          "package_name": "com.lgc.laughcoin"
+          "package_name": "com.lgcinovations.laughcoin"
         }
       },
       "oauth_client": [
@@ -18,7 +18,7 @@
           "client_id": "293022314378-koojrtfmvv29vqql6nuk9hav1lcq9j2h.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.lgc.laughcoin",
+            "package_name": "com.lgcinovations.laughcoin",
             "certificate_hash": "1a80c4ca58cbcaa58b74baab990c6a61f0a1e65e"
           }
         },
@@ -26,7 +26,7 @@
           "client_id": "293022314378-rosjvoelrdo1jk4qi9luklsp0gat3j14.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.lgc.laughcoin",
+            "package_name": "com.lgcinovations.laughcoin",
             "certificate_hash": "0f16f0e92d9f24cada3bef33b6fdacf6471f2c8b"
           }
         },

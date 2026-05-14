@@ -35,5 +35,5 @@
 
 # --- App Specific ---
 # Keep essential entry points and data models used in reflection
--keep class com.lgc.laughcoin.MainActivity { *; }
--keep class com.lgc.laughcoin.EmojiState { *; }
+-keep class com.lgcinovations.laughcoin.MainActivity { *; }
+-keep class com.lgcinovations.laughcoin.EmojiState { *; }

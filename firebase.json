@@ -2,5 +2,23 @@
   "functions": {
     "source": "laughcoin-functions",
     "runtime": "nodejs22"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "app/**",
+      "gradle/**",
+      ".idea/**",
+      ".kotlin/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

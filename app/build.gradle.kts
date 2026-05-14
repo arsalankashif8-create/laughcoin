@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.lgc.laughcoin"
+    namespace = "com.lgcinovations.laughcoin"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.lgc.laughcoin"
+        applicationId = "com.lgcinovations.laughcoin"
         minSdk = 24
         targetSdk = 37
         versionCode = 2
