@@ -196,16 +196,12 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                         val catchupReward = (secondsOffline * rate) / 3600.0
                         
                         if (catchupReward > 0.001) {
-                            // First, get the latest balance to avoid overwriting web updates
-                            db.collection("users").document(uid).get().addOnSuccessListener { freshSnap ->
-                                val latestBal = freshSnap.getDouble("balance") ?: 0.0
-                                db.collection("users").document(uid).update(
-                                    "balance", latestBal + catchupReward,
-                                    "totalRewards", FieldValue.increment(catchupReward),
-                                    "lastSeen", now
-                                )
-                                onStreakClaimed(catchupReward)
-                            }
+                            db.collection("users").document(uid).update(
+                                "balance", FieldValue.increment(catchupReward),
+                                "totalRewards", FieldValue.increment(catchupReward),
+                                "lastSeen", now
+                            )
+                            onStreakClaimed(catchupReward)
                         }
                     }
                 }
@@ -623,7 +619,7 @@ fun GalaBanner() {
             Spacer(Modifier.height(8.dp))
             Text("• 0.05 LGC Per Tap! 🔥", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("• 15 LGC Daily Mining Bonus! ☁️", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text("• 5.0 LGC Auto-Start Reward! ⚡", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("• 15.0 LGC Auto-Start Reward! ⚡", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("• 100 LGC Referral Bonus (BOTH)! 👥", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("• DOUBLE BONUS (100+100) for Top Referrers! 🚀", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Black)
             

@@ -234,19 +234,19 @@ fun HomeScreen() {
                     Spacer(Modifier.height(8.dp))
                     Text("Contract Address:", color = Color.Gray, fontSize = 9.sp)
                     Text(
-                        "0x86c6e869e5e8c488fd6c940f551ff424cc9de130", 
+                        "0x03307436d6532Eb1A514E08e225ac99879D88185", 
                         color = Color.White, 
                         fontSize = 10.sp,
                         modifier = Modifier.clickable {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("LGC Contract", "0x86c6e869e5e8c488fd6c940f551ff424cc9de130"))
+                            clipboard.setPrimaryClip(ClipData.newPlainText("LGC Contract", "0x03307436d6532Eb1A514E08e225ac99879D88185"))
                             Toast.makeText(context, "Contract Copied!", Toast.LENGTH_SHORT).show()
                         }
                     )
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, "https://www.dextools.io/app/bnb/pair-explorer/0x377aa7fdde1074acef347c9d720c7273d3b1b56c".toUri())
+                            val intent = Intent(Intent.ACTION_VIEW, "https://www.dextools.io/app/bnb/pair-explorer/0x1ec1ef12394cd2fC1f0D9303e756c4C56Ea117A6".toUri())
                             context.startActivity(intent)
                         },
                         colors = ButtonDefaults.buttonColors(Color(0xFF00D1FF)),

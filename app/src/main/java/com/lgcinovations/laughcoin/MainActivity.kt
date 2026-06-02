@@ -64,7 +64,7 @@ class MainActivity : ComponentActivity() {
         }
         remoteConfig.setConfigSettingsAsync(configSettings)
         remoteConfig.setDefaultsAsync(mapOf(
-            "current_version_code" to 1L,
+            "current_version_code" to 5L,
             "update_url" to "https://laughcoin.online/laughcoin.apk",
             "force_update" to false
         ))
@@ -167,8 +167,7 @@ fun MainAppScreen() {
                     // --- 🛡️ CHECK EMAIL VERIFICATION FOR BONUSES ---
                     user.reload().addOnCompleteListener { 
                         if (user.isEmailVerified && bonusPending) {
-                            val galaActive = isGalaActive()
-                            val signupBonus = if (galaActive) 100.0 else 5.0
+                            val signupBonus = 5.0
                             val refBonus = 100.0
                             val referredBy = snapshot.getString("referredBy") ?: ""
 
@@ -648,14 +647,14 @@ fun AdInterstitialScreen(navController: androidx.navigation.NavController, targe
 fun RealTimePriceSlider() {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    var priceText by remember { mutableStateOf("LGC/BNB: Fetching... • 5 LGC Signup Bonus! • 5 LGC Per Referral! • Join the Ecosystem! • ") }
+    var priceText by remember { mutableStateOf("LGC/BNB: Fetching... • 5 LGC Signup Bonus! • 100 LGC Per Referral! • Join the Ecosystem! • ") }
     val client = OkHttpClient()
 
     LaunchedEffect(Unit) {
         while(true) {
             try {
                 val request = Request.Builder()
-                    .url("https://api.dexscreener.com/latest/dex/pairs/bsc/0x377aa7fdde1074acef347c9d720c7273d3b1b56c")
+                    .url("https://api.dexscreener.com/latest/dex/pairs/bsc/0x1ec1ef12394cd2fC1f0D9303e756c4C56Ea117A6")
                     .build()
                 
                 val response = withContext(Dispatchers.IO) { client.newCall(request).execute() }
@@ -669,7 +668,7 @@ fun RealTimePriceSlider() {
 
                         if (priceUsd != null) {
                             val changeText = if (priceChange != null) " ($priceChange%)" else ""
-                            priceText = "LGC/BNB: $$priceUsd$changeText • 5 LGC Signup Bonus! • 5 LGC Per Referral! • Join the Ecosystem! • "
+                            priceText = "LGC/BNB: $$priceUsd$changeText • 5 LGC Signup Bonus! • 100 LGC Per Referral! • Join the Ecosystem! • "
                         }
                     }
                 }
@@ -693,7 +692,7 @@ fun RealTimePriceSlider() {
             .padding(vertical = 6.dp)
             .horizontalScroll(scrollState, false)
             .clickable {
-                val intent = Intent(Intent.ACTION_VIEW, "https://www.dextools.io/app/bnb/pair-explorer/0x377aa7fdde1074acef347c9d720c7273d3b1b56c".toUri())
+                val intent = Intent(Intent.ACTION_VIEW, "https://www.dextools.io/app/bnb/pair-explorer/0x1ec1ef12394cd2fC1f0D9303e756c4C56Ea117A6".toUri())
                 context.startActivity(intent)
             }
     ) {
