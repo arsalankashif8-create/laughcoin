@@ -256,6 +256,7 @@ fun MainAppScreen() {
 
     var updateUrl by remember { mutableStateOf("https://laughcoin.online/laughcoin.apk") }
     var isForceUpdate by remember { mutableStateOf(false) }
+    var showUpdatePopup by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val remoteConfig = FirebaseRemoteConfig.getInstance()
