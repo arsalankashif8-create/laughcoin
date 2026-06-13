@@ -97,12 +97,16 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     LaunchedEffect(showAdPlaceholder) {
         if (showAdPlaceholder) {
             adCountdown = 10
-            while (adCountdown > 0) {
+            while (adCountdown > 0 && isActive) {
                 delay(1000)
+                if (!isActive) return@LaunchedEffect
                 adCountdown--
             }
+            if (!isActive) return@LaunchedEffect
             delay(500) // Small pause for "Reward Ready"
-            completeAdAction()
+            if (isActive && showAdPlaceholder) {
+                completeAdAction()
+            }
         }
     }
 
