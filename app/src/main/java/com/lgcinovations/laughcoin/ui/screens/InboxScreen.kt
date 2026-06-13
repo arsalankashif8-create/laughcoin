@@ -48,7 +48,11 @@ fun InboxScreen() {
                             type = doc.getString("type") ?: "",
                             amount = (doc.getDouble("amount") ?: doc.getLong("amount")?.toDouble() ?: 0.0),
                             message = doc.getString("message") ?: "",
-                            timestamp = doc.getLong("timestamp") ?: 0L,
+                            timestamp = try {
+                                doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
+                            } catch (e: Exception) {
+                                doc.getLong("timestamp") ?: 0L
+                            },
                             read = doc.getBoolean("read") ?: false
                         )
                     } ?: emptyList()
