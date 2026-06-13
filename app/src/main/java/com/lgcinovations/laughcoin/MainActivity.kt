@@ -546,10 +546,13 @@ fun AdInterstitialScreen(navController: androidx.navigation.NavController, targe
             if (!isActive) return@LaunchedEffect
             timeLeft--
         }
-        if (isActive) {
+        if (!isActive) return@LaunchedEffect
+        try {
             navController.navigate(targetRoute) {
                 popUpTo(Screen.AdInterstitial.route) { inclusive = true }
             }
+        } catch (e: Exception) {
+            // Composable already gone — ignore navigation error
         }
     }
 
@@ -612,17 +615,19 @@ fun AdInterstitialScreen(navController: androidx.navigation.NavController, targe
                     androidx.compose.ui.viewinterop.AndroidView(
                         factory = { ctx ->
                             android.webkit.WebView(ctx).apply {
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                webViewClient = android.webkit.WebViewClient()
-                                loadUrl(adLink)
+                                try {
+                                    settings.javaScriptEnabled = true
+                                    settings.domStorageEnabled = true
+                                    settings.setSupportZoom(false)
+                                    webViewClient = android.webkit.WebViewClient()
+                                    loadUrl(adLink)
+                                } catch (e: Exception) {
+                                    // WebView init failed — ignore
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxSize()
                     )
-                    
-                    // Overlay to ensure clicks go to the sponsor link if needed, 
-                    // or just let the WebView handle it.
                 }
             }
 

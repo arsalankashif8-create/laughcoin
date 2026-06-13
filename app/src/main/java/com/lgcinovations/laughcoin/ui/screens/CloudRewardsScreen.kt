@@ -104,9 +104,13 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                 adCountdown--
             }
             if (!isActive) return@LaunchedEffect
-            delay(500) // Small pause for "Reward Ready"
-            if (isActive && showAdPlaceholder) {
-                completeAdAction()
+            delay(500)
+            try {
+                if (isActive && showAdPlaceholder) {
+                    completeAdAction()
+                }
+            } catch (e: Exception) {
+                // Composable gone — ignore
             }
         }
     }
