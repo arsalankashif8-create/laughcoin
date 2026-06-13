@@ -111,7 +111,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     }
 
     LaunchedEffect(Unit) { 
-        while(true) { 
+        while(isActive) { 
             currentTime = System.currentTimeMillis()
             
             // Background earning calculation for session

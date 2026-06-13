@@ -223,7 +223,7 @@ fun MainAppScreen() {
             }
             
             // --- ⏱️ PERIODIC ACTIVITY SYNC (Every 2 min) ---
-            while(true) {
+            while(isActive) {
                 db.collection("users").document(user.uid).update("lastSeen", System.currentTimeMillis())
                 delay(120000)
             }
