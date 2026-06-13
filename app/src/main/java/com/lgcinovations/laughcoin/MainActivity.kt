@@ -474,18 +474,11 @@ fun MainAppScreen() {
         NavHost(navController, startDestination, Modifier.padding(padding)) {
             composable(Screen.Auth.route) { 
                 AuthScreen(navController) { 
-                    // Navigate through ad screen after login/signup
-                    navController.navigate("${Screen.AdInterstitial.route}/${Screen.Home.route}") { popUpTo(0) } 
+                    // Go straight to home — no ad screen
+                    navController.navigate(Screen.Home.route) { popUpTo(0) } 
                 } 
             }
             composable(Screen.Home.route) { 
-                // Show ad once when user returns to home if not shown this session
-                LaunchedEffect(Unit) {
-                    if (!hasShownSessionAd.value) {
-                        hasShownSessionAd.value = true
-                        navController.navigate("${Screen.AdInterstitial.route}/${Screen.Home.route}")
-                    }
-                }
                 HomeScreen() 
             }
             composable(Screen.Rewards.route) { CloudRewardsScreen { showStreakPopup = it } }
