@@ -3,6 +3,8 @@ package com.lgcinovations.laughcoin.ui.screens
 import android.util.Log
 import android.widget.Toast
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,11 +23,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
 import androidx.navigation.NavHostController
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.lgcinovations.laughcoin.R
@@ -46,6 +47,48 @@ fun AuthScreen(navController: NavHostController, onLoginSuccess: () -> Unit) {
     var isSignUp by remember { mutableStateOf(false) }
     var hasAgreed by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+
+    // Classic GoogleSignIn — reliable with release keystore SHA-1
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("293022314378-0t2j1t24aiqj03gcl166fnsqj2iiff1f.apps.googleusercontent.com")
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken != null) {
+                val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+                auth.signInWithCredential(firebaseCredential)
+                    .addOnSuccessListener { authResult ->
+                        val isNewUser = authResult.additionalUserInfo?.isNewUser ?: false
+                        if (isNewUser) {
+                            handleReferral(authResult.user, authResult.user?.uid ?: "", inviteCode.trim(), authResult.user?.email ?: "")
+                        }
+                        isLoading = false
+                        onLoginSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        isLoading = false
+                        Toast.makeText(context, "Firebase Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+            } else {
+                isLoading = false
+                Toast.makeText(context, "Google Sign-In failed: No token", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: ApiException) {
+            isLoading = false
+            Log.e("Auth", "Google Sign-In failed", e)
+            Toast.makeText(context, "Google Sign-In failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        }
+    }
 
     Column(
         Modifier
@@ -149,63 +192,9 @@ fun AuthScreen(navController: NavHostController, onLoginSuccess: () -> Unit) {
                     return@OutlinedButton
                 }
                 isLoading = true
-                val credentialManager = CredentialManager.create(context)
-                val googleIdOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId("293022314378-0t2j1t24aiqj03gcl166fnsqj2iiff1f.apps.googleusercontent.com")
-                    .setAutoSelectEnabled(false)
-                    .build()
-
-                val request = GetCredentialRequest.Builder()
-                    .addCredentialOption(googleIdOption)
-                    .build()
-
-                scope.launch {
-                    try {
-                        val result = credentialManager.getCredential(context, request)
-                        val credential = result.credential
-                        
-                        if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                            val idToken = googleIdTokenCredential.idToken
-                            if (idToken.isEmpty()) {
-                                isLoading = false
-                                Toast.makeText(context, "Invalid Google ID Token", Toast.LENGTH_SHORT).show()
-                                return@launch
-                            }
-                            val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-                            auth.signInWithCredential(firebaseCredential)
-                                .addOnSuccessListener { result ->
-                                    val isNewUser = result.additionalUserInfo?.isNewUser ?: false
-                                    if (isNewUser) {
-                                        // For Google users, we set bonusPending to true and let handleReferral create the doc.
-                                        // The reward logic in MainActivity will pick it up since Google accounts are pre-verified.
-                                        handleReferral(result.user, result.user?.uid ?: "", inviteCode.trim(), result.user?.email ?: "")
-                                    }
-                                    isLoading = false
-                                    onLoginSuccess() 
-                                }
-                                .addOnFailureListener { e ->
-                                    isLoading = false
-                                    Log.e("Auth", "Firebase Auth Failure", e)
-                                    Toast.makeText(context, "Firebase Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                                }
-                        } else {
-                            isLoading = false
-                            Toast.makeText(context, "Unexpected credential type: ${credential.type}", Toast.LENGTH_SHORT).show()
-                        }
-                    } catch (e: Exception) {
-                        isLoading = false
-                        Log.e("Auth", "Google Sign-In Error", e)
-                        val errorMsg = if (e.localizedMessage?.contains("canceled", ignoreCase = true) == true) {
-                            "Sign-in Canceled"
-                        } else if (e.localizedMessage?.contains("no account", ignoreCase = true) == true) {
-                            "No Google accounts found"
-                        } else {
-                            "Google Sign-In failed: ${e.localizedMessage}"
-                        }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
-                    }
+                // Sign out first to force account picker to show
+                googleSignInClient.signOut().addOnCompleteListener {
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
                 }
             },
             modifier = Modifier.fillMaxWidth().height(50.dp),
