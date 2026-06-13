@@ -254,8 +254,59 @@ fun MainAppScreen() {
         }
     }
 
-    // --- 🚀 REAL-TIME UPDATE CHECKER ---
-    var showUpdatePopup by remember { mutableStateOf(false) }
+    // --- 📺 ONE-TIME AD POPUP AFTER LOGIN ---
+    var showLoginAd by remember { mutableStateOf(false) }
+    var loginAdShown by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(isAuth) {
+        if (isAuth && !loginAdShown) {
+            delay(1500)  // Let home screen load first
+            if (isActive) {
+                showLoginAd = true
+                loginAdShown = true
+            }
+        }
+    }
+    
+    if (showLoginAd) {
+        AlertDialog(
+            onDismissRequest = { showLoginAd = false },
+            title = { 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("📺 Sponsored", color = LgcGold)
+                    TextButton(onClick = { showLoginAd = false }) { Text("✕", color = Color.Gray, fontSize = 16.sp) }
+                }
+            },
+            text = { 
+                Column {
+                    Text("Support our sponsors!", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Visit our sponsor to unlock more rewards", color = Color.Gray, fontSize = 12.sp)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        try {
+                            val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
+                            val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
+                            context.startActivity(intent)
+                        } catch (e: Exception) { }
+                        showLoginAd = false
+                    },
+                    colors = ButtonDefaults.buttonColors(LgcGold)
+                ) {
+                    Text("VISIT SPONSOR", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = CyberBlue,
+            titleContentColor = Color.White
+        )
+    }
     var updateUrl by remember { mutableStateOf("https://laughcoin.online/laughcoin.apk") }
     var isForceUpdate by remember { mutableStateOf(false) }
 
