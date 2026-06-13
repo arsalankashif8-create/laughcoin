@@ -58,11 +58,6 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Edge-to-edge for v8 builds (Android 10+ / API 29+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
-        }
-
         // Initialize Remote Config
         val remoteConfig = FirebaseRemoteConfig.getInstance()
         val configSettings = remoteConfigSettings {

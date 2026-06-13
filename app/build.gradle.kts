@@ -27,21 +27,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    flavorDimensions += "version"
-    productFlavors {
-        // v8 — Edge-to-edge, Android 10+ (API 29+), new phones
-        create("v8") {
-            dimension = "version"
-            versionNameSuffix = "-v8"
-            minSdk = 29
-        }
-        // v7 — Classic layout, Android 7+ (API 24+), older phones
-        create("v7") {
-            dimension = "version"
-            versionNameSuffix = "-v7"
-            minSdk = 24
-        }
-    }
+
 
     signingConfigs {
         create("release") {
