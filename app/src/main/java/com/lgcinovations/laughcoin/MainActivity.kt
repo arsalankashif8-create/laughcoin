@@ -598,36 +598,34 @@ fun AdInterstitialScreen(navController: androidx.navigation.NavController, targe
 
             Spacer(Modifier.height(20.dp))
             
-            // Full Screen Ad Content
+            // Full Screen Ad Content — simple placeholder (no WebView, crashes Android 15)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .clickable {
-                        val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
-                        context.startActivity(intent)
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
+                            context.startActivity(intent)
+                        } catch (e: Exception) { }
                     },
                 colors = CardDefaults.cardColors(CyberBlue),
                 border = BorderStroke(2.dp, LgcGold),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    androidx.compose.ui.viewinterop.AndroidView(
-                        factory = { ctx ->
-                            android.webkit.WebView(ctx).apply {
-                                try {
-                                    settings.javaScriptEnabled = true
-                                    settings.domStorageEnabled = true
-                                    settings.setSupportZoom(false)
-                                    webViewClient = android.webkit.WebViewClient()
-                                    loadUrl(adLink)
-                                } catch (e: Exception) {
-                                    // WebView init failed — ignore
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("📺", fontSize = 56.sp)
+                        Spacer(Modifier.height(16.dp))
+                        Text("SPONSORED CONTENT", color = LgcGold, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                        Spacer(Modifier.height(8.dp))
+                        Text("Tap to view our sponsor", color = Color.White, fontSize = 13.sp)
+                        Spacer(Modifier.height(4.dp))
+                        Text("and support LaughCoin rewards", color = Color.Gray, fontSize = 11.sp)
+                    }
                 }
             }
 
