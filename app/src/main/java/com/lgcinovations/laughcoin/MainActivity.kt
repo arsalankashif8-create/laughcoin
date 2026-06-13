@@ -546,12 +546,15 @@ fun AdInterstitialScreen(navController: androidx.navigation.NavController, targe
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        while (timeLeft > 0) {
+        while (timeLeft > 0 && isActive) {
             delay(1000)
+            if (!isActive) return@LaunchedEffect
             timeLeft--
         }
-        navController.navigate(targetRoute) {
-            popUpTo(Screen.AdInterstitial.route) { inclusive = true }
+        if (isActive) {
+            navController.navigate(targetRoute) {
+                popUpTo(Screen.AdInterstitial.route) { inclusive = true }
+            }
         }
     }
 
