@@ -155,3 +155,196 @@ exports.sendWithdrawalNotification = functions.region("asia-southeast1").firesto
     }
     return null;
   });
+
+/**
+ * 💰 AUTO-CREATE WALLET NOTIFICATIONS
+ * Triggers when transactions happen - auto-adds to users/{uid}/notifications
+ */
+
+// TIP SENT
+exports.onTipCreated = functions.firestore
+  .document("tips/{tipId}")
+  .onCreate(async (snap, context) => {
+    try {
+      const tip = snap.data();
+      const receiverId = tip.receiverId;
+      const senderId = tip.senderId;
+      const amount = tip.amount || 0;
+      const message = tip.message || `Tip received`;
+      const timestamp = tip.ts || admin.firestore.Timestamp.now();
+
+      await admin.firestore()
+        .collection("users").doc(receiverId)
+        .collection("notifications").add({
+          type: "tip",
+          amount: amount,
+          message: message || `Received ${amount} LGC tip`,
+          timestamp: timestamp,
+          read: false,
+          sourceId: context.params.tipId,
+          senderId: senderId,
+        });
+
+      console.log(`✅ Tip notification created for user ${receiverId}`);
+    } catch (error) {
+      console.error("❌ Error creating tip notification:", error);
+    }
+  });
+
+// REWARD EARNED
+exports.onRewardCreated = functions.firestore
+  .document("rewards/{rewardId}")
+  .onCreate(async (snap, context) => {
+    try {
+      const reward = snap.data();
+      const userId = reward.userId;
+      const amount = reward.amount || 0;
+      const rewardType = reward.type || "daily_login";
+      const timestamp = reward.timestamp || admin.firestore.Timestamp.now();
+
+      let message = `${amount} LGC earned`;
+      if (rewardType === "daily_login") {
+        message = `Daily login bonus earned`;
+      } else if (rewardType === "referral") {
+        message = `Referral reward earned`;
+      }
+
+      await admin.firestore()
+        .collection("users").doc(userId)
+        .collection("notifications").add({
+          type: "reward",
+          amount: amount,
+          message: message,
+          timestamp: timestamp,
+          read: false,
+          sourceId: context.params.rewardId,
+          rewardType: rewardType,
+        });
+
+      console.log(`✅ Reward notification created for user ${userId}`);
+    } catch (error) {
+      console.error("❌ Error creating reward notification:", error);
+    }
+  });
+
+// WITHDRAWAL APPROVED
+exports.onWithdrawalApproved = functions.firestore
+  .document("withdrawals/{withdrawalId}")
+  .onUpdate(async (change, context) => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+
+      if (before.status !== "approved" && after.status === "approved") {
+        const userId = after.userId;
+        const amount = after.amount || 0;
+        const timestamp = admin.firestore.Timestamp.now();
+
+        await admin.firestore()
+          .collection("users").doc(userId)
+          .collection("notifications").add({
+            type: "withdrawal",
+            amount: amount,
+            message: `Withdrawal approved - ${amount} LGC`,
+            timestamp: timestamp,
+            read: false,
+            sourceId: context.params.withdrawalId,
+            walletAddress: after.walletAddress,
+          });
+
+        console.log(`✅ Withdrawal notification created for user ${userId}`);
+      }
+    } catch (error) {
+      console.error("❌ Error creating withdrawal notification:", error);
+    }
+  });
+
+// GIFT SENT
+exports.onGiftCreated = functions.firestore
+  .document("gifts/{giftId}")
+  .onCreate(async (snap, context) => {
+    try {
+      const gift = snap.data();
+      const receiverId = gift.receiverId;
+      const senderId = gift.senderId;
+      const amount = gift.amount || 0;
+      const timestamp = gift.timestamp || admin.firestore.Timestamp.now();
+
+      await admin.firestore()
+        .collection("users").doc(receiverId)
+        .collection("notifications").add({
+          type: "gift",
+          amount: amount,
+          message: `Gift received - ${amount} LGC`,
+          timestamp: timestamp,
+          read: false,
+          sourceId: context.params.giftId,
+          senderId: senderId,
+        });
+
+      console.log(`✅ Gift notification created for user ${receiverId}`);
+    } catch (error) {
+      console.error("❌ Error creating gift notification:", error);
+    }
+  });
+
+// BATTLE GIFT SENT
+exports.onBattleGiftCreated = functions.firestore
+  .document("battle_gifts/{battleGiftId}")
+  .onCreate(async (snap, context) => {
+    try {
+      const battleGift = snap.data();
+      const receiverId = battleGift.receiverId;
+      const senderId = battleGift.senderId;
+      const amount = battleGift.amount || 0;
+      const timestamp = battleGift.timestamp || admin.firestore.Timestamp.now();
+
+      await admin.firestore()
+        .collection("users").doc(receiverId)
+        .collection("notifications").add({
+          type: "battle_gift",
+          amount: amount,
+          message: `Battle gift received - ${amount} LGC`,
+          timestamp: timestamp,
+          read: false,
+          sourceId: context.params.battleGiftId,
+          senderId: senderId,
+          battleId: battleGift.battleId,
+        });
+
+      console.log(`✅ Battle gift notification created for user ${receiverId}`);
+    } catch (error) {
+      console.error("❌ Error creating battle gift notification:", error);
+    }
+  });
+
+// DEPOSIT COMPLETED
+exports.onDepositCompleted = functions.firestore
+  .document("deposits/{depositId}")
+  .onUpdate(async (change, context) => {
+    try {
+      const before = change.before.data();
+      const after = change.after.data();
+
+      if (before.status !== "completed" && after.status === "completed") {
+        const userId = after.userId;
+        const amount = after.amount || 0;
+        const timestamp = admin.firestore.Timestamp.now();
+
+        await admin.firestore()
+          .collection("users").doc(userId)
+          .collection("notifications").add({
+            type: "deposit",
+            amount: amount,
+            message: `Deposit confirmed - ${amount} LGC received`,
+            timestamp: timestamp,
+            read: false,
+            sourceId: context.params.depositId,
+          });
+
+        console.log(`✅ Deposit notification created for user ${userId}`);
+      }
+    } catch (error) {
+      console.error("❌ Error creating deposit notification:", error);
+    }
+  });
