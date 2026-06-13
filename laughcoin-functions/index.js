@@ -162,7 +162,7 @@ exports.sendWithdrawalNotification = functions.region("asia-southeast1").firesto
  */
 
 // TIP SENT
-exports.onTipCreated = functions.firestore
+exports.onTipCreated = functions.region("asia-southeast1").firestore
   .document("tips/{tipId}")
   .onCreate(async (snap, context) => {
     try {
@@ -192,7 +192,7 @@ exports.onTipCreated = functions.firestore
   });
 
 // REWARD EARNED
-exports.onRewardCreated = functions.firestore
+exports.onRewardCreated = functions.region("asia-southeast1").firestore
   .document("rewards/{rewardId}")
   .onCreate(async (snap, context) => {
     try {
@@ -228,7 +228,7 @@ exports.onRewardCreated = functions.firestore
   });
 
 // WITHDRAWAL APPROVED
-exports.onWithdrawalApproved = functions.firestore
+exports.onWithdrawalApproved = functions.region("asia-southeast1").firestore
   .document("withdrawals/{withdrawalId}")
   .onUpdate(async (change, context) => {
     try {
@@ -260,7 +260,7 @@ exports.onWithdrawalApproved = functions.firestore
   });
 
 // GIFT SENT
-exports.onGiftCreated = functions.firestore
+exports.onGiftCreated = functions.region("asia-southeast1").firestore
   .document("gifts/{giftId}")
   .onCreate(async (snap, context) => {
     try {
@@ -289,7 +289,7 @@ exports.onGiftCreated = functions.firestore
   });
 
 // BATTLE GIFT SENT
-exports.onBattleGiftCreated = functions.firestore
+exports.onBattleGiftCreated = functions.region("asia-southeast1").firestore
   .document("battle_gifts/{battleGiftId}")
   .onCreate(async (snap, context) => {
     try {
@@ -319,7 +319,7 @@ exports.onBattleGiftCreated = functions.firestore
   });
 
 // DEPOSIT COMPLETED
-exports.onDepositCompleted = functions.firestore
+exports.onDepositCompleted = functions.region("asia-southeast1").firestore
   .document("deposits/{depositId}")
   .onUpdate(async (change, context) => {
     try {
