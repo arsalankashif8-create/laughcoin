@@ -14,7 +14,32 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         remoteMessage.notification?.let {
-            sendNotification(it.title ?: "LaughCoin", it.body ?: "")
+            val title = decodeUnicode(it.title ?: "LaughCoin")
+            val body  = decodeUnicode(it.body  ?: "")
+            sendNotification(title, body)
+        }
+        // Also handle data payloads
+        if (remoteMessage.data.isNotEmpty()) {
+            val title = decodeUnicode(remoteMessage.data["title"] ?: return)
+            val body  = decodeUnicode(remoteMessage.data["body"]  ?: "")
+            if (remoteMessage.notification == null) sendNotification(title, body)
+        }
+    }
+
+    /**
+     * Converts raw Unicode escape sequences like U0001F525 or \uD83D\uDD25 to
+     * actual emoji characters so they display correctly in notifications.
+     */
+    private fun decodeUnicode(text: String): String {
+        // Replace U0001Fxxx style (LaughCoin Cloud Function bug)
+        val pattern = Regex("U([0-9A-Fa-f]{4,8})")
+        return pattern.replace(text) { match ->
+            try {
+                val codePoint = match.groupValues[1].toInt(16)
+                String(Character.toChars(codePoint))
+            } catch (e: Exception) {
+                match.value // leave unchanged if invalid
+            }
         }
     }
 
@@ -26,9 +51,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val channelId = "laughcoin_notifications"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.laugh_logo) // Ensure this exists or use ic_launcher
+            .setSmallIcon(R.drawable.laugh_logo)
             .setContentTitle(title)
             .setContentText(messageBody)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(messageBody))
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
