@@ -45,6 +45,7 @@ import com.lgcinovations.laughcoin.ui.screens.*
 import com.lgcinovations.laughcoin.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
 import okhttp3.OkHttpClient

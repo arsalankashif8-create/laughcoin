@@ -34,6 +34,7 @@ import com.lgcinovations.laughcoin.formatTime
 import com.lgcinovations.laughcoin.isYesterday
 import com.lgcinovations.laughcoin.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.util.*
 import kotlin.math.min
 
