@@ -651,7 +651,7 @@ fun RealTimePriceSlider() {
     val client = OkHttpClient()
 
     LaunchedEffect(Unit) {
-        while(true) {
+        while(isActive) {
             try {
                 val request = Request.Builder()
                     .url("https://api.dexscreener.com/latest/dex/pairs/bsc/0x1ec1ef12394cd2fC1f0D9303e756c4C56Ea117A6")
@@ -679,9 +679,13 @@ fun RealTimePriceSlider() {
     }
     
     LaunchedEffect(Unit) {
-        while (true) {
-            scrollState.animateScrollTo(scrollState.maxValue, tween(30000, easing = LinearEasing))
-            scrollState.scrollTo(0)
+        while (isActive) {
+            try {
+                scrollState.animateScrollTo(scrollState.maxValue, tween(30000, easing = LinearEasing))
+                scrollState.scrollTo(0)
+            } catch (_: Exception) {
+                break
+            }
         }
     }
 
