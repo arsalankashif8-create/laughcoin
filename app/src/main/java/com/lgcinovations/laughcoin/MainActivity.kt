@@ -58,6 +58,20 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        // Global crash handler — writes crash to a file we can read
+        Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
+            try {
+                val crashFile = java.io.File(getExternalFilesDir(null), "laughcoin_crash.txt")
+                crashFile.writeText(
+                    "CRASH at ${java.util.Date()}\n\n" +
+                    throwable.toString() + "\n\n" +
+                    throwable.stackTraceToString()
+                )
+            } catch (_: Exception) { }
+            // Let the system handle it after logging
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }
+
         // Initialize Remote Config
         val remoteConfig = FirebaseRemoteConfig.getInstance()
         val configSettings = remoteConfigSettings {
@@ -72,15 +86,19 @@ class MainActivity : ComponentActivity() {
         remoteConfig.fetchAndActivate()
 
         // Initialize App Check (Debug for local, Play Integrity for production)
-        val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        if (isDebug) {
-            Firebase.appCheck.installAppCheckProviderFactory(
-                DebugAppCheckProviderFactory.getInstance(),
-            )
-        } else {
-            Firebase.appCheck.installAppCheckProviderFactory(
-                PlayIntegrityAppCheckProviderFactory.getInstance(),
-            )
+        try {
+            val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            if (isDebug) {
+                Firebase.appCheck.installAppCheckProviderFactory(
+                    DebugAppCheckProviderFactory.getInstance(),
+                )
+            } else {
+                Firebase.appCheck.installAppCheckProviderFactory(
+                    PlayIntegrityAppCheckProviderFactory.getInstance(),
+                )
+            }
+        } catch (e: Exception) {
+            // App Check init failed — continue without it
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
