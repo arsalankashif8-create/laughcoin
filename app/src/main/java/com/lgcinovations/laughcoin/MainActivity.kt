@@ -216,7 +216,17 @@ fun MainAppScreen() {
                         }
                     }
 
-                    val lastLogin = snapshot.getTimestamp("lastLoginDate")?.toDate()?.time ?: 0L
+                    val lastLogin = try {
+                        // Try to get as Timestamp first
+                        snapshot.getTimestamp("lastLoginDate")?.toDate()?.time ?: 0L
+                    } catch (e: Exception) {
+                        // If not a Timestamp, try as Long
+                        try {
+                            snapshot.getLong("lastLoginDate") ?: 0L
+                        } catch (e2: Exception) {
+                            0L
+                        }
+                    }
                     val now = System.currentTimeMillis()
                     val oneDay = 24 * 60 * 60 * 1000
                     
