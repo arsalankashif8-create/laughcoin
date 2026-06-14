@@ -36,14 +36,16 @@ import com.lgcinovations.laughcoin.ui.theme.*
 import java.util.*
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(externalBalance: Double = 0.0) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
     val uid = auth.currentUser?.uid ?: ""
     val userEmail = auth.currentUser?.email?.split("@")?.get(0) ?: "User"
     val context = LocalContext.current
 
-    var balance by remember { mutableDoubleStateOf(0.0) }
+    var balance by remember { mutableDoubleStateOf(externalBalance) }
+    // Sync whenever globalBalance from MainAppScreen updates
+    LaunchedEffect(externalBalance) { if (externalBalance > 0.0) balance = externalBalance }
     var totalRewards by remember { mutableDoubleStateOf(0.0) }
     var taps by remember { mutableLongStateOf(0L) }
     var level by remember { mutableIntStateOf(1) }

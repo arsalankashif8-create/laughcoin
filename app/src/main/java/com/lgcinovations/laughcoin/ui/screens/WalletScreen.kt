@@ -26,16 +26,21 @@ import com.lgcinovations.laughcoin.ui.theme.*
 import java.util.*
 
 @Composable
-fun WalletScreen() {
+fun WalletScreen(externalBalance: Double = 0.0) {
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
     val uid = auth.currentUser?.uid ?: ""
     val context = LocalContext.current
     
-    var balance by remember { mutableDoubleStateOf(0.0) }
+    var balance by remember { mutableDoubleStateOf(externalBalance) }
     var walletAddress by remember { mutableStateOf("") }
     var kycStatus by remember { mutableStateOf("unverified") }
     var transactions by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
+
+    // Sync with external real-time balance from MainAppScreen
+    LaunchedEffect(externalBalance) {
+        if (externalBalance > 0.0) balance = externalBalance
+    }
 
     LaunchedEffect(uid) {
         if (uid.isNotEmpty()) {

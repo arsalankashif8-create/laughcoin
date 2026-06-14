@@ -169,6 +169,22 @@ fun MainAppScreen() {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
 
+    // --- 💰 GLOBAL REAL-TIME BALANCE (shared across all screens) ---
+    var globalBalance by remember { mutableDoubleStateOf(0.0) }
+    val uid = auth.currentUser?.uid ?: ""
+    LaunchedEffect(uid) {
+        if (uid.isNotEmpty()) {
+            db.collection("users").document(uid).addSnapshotListener { snap, _ ->
+                if (snap != null && snap.exists()) {
+                    val newBal = snap.getDouble("balance") ?: 0.0
+                    if (newBal != globalBalance) {
+                        globalBalance = newBal
+                    }
+                }
+            }
+        }
+    }
+
     // --- 📢 SESSION AD TRACKER ---
     val hasShownSessionAd = remember { mutableStateOf(false) }
     
@@ -506,11 +522,11 @@ fun MainAppScreen() {
                 } 
             }
             composable(Screen.Home.route) { 
-                HomeScreen() 
+                HomeScreen(externalBalance = globalBalance) 
             }
             composable(Screen.Rewards.route) { CloudRewardsScreen { showStreakPopup = it } }
             composable(Screen.Leaders.route) { LeadersScreen() }
-            composable(Screen.Wallet.route) { WalletScreen() }
+            composable(Screen.Wallet.route) { WalletScreen(externalBalance = globalBalance) }
             composable(Screen.Profile.route) { ProfileScreen(navController) { navController.navigate(Screen.Auth.route) { popUpTo(0) } } }
             composable(Screen.Privacy.route) { PolicyScreen("Privacy Policy", PRIVACY_TEXT) }
             composable(Screen.Cookies.route) { PolicyScreen("Cookies Policy", COOKIES_TEXT) }
