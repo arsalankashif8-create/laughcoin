@@ -1908,6 +1908,11 @@ function renderTxHistory() {
                  : type==='tip_sent' ? '📤'
                  : type==='reward'   ? '🟢'
                  : type==='battle_win' ? '🏆' : '🔔';
+        // Extract amount from message if rawAmt is 0
+        if (rawAmt === 0) {
+          var numMatch2 = (d.message || '').match(/([0-9]+(?:\.[0-9]+)?)/g);
+          if (numMatch2) rawAmt = parseFloat(numMatch2[numMatch2.length-1]) || 0;
+        }
         remote.push({
           label: icon + ' ' + (d.message || type),
           amount: isSent ? -rawAmt : rawAmt,
@@ -1927,14 +1932,23 @@ function renderTxHistory() {
       }
 
       el.innerHTML = all.map(function(tx) {
-        var isPos = tx.amount >= 0;
+        // Extract numeric amount from label/message if amount is 0
+        var amt = tx.amount || 0;
+        if (Math.abs(amt) < 0.0001) {
+          var numMatch = (tx.label || '').match(/([0-9]+(?:\.[0-9]+)?)/g);
+          if (numMatch) amt = parseFloat(numMatch[numMatch.length - 1]) || 0;
+          // Apply sign based on type
+          if (tx.source === 'notif' && tx.label && tx.label.indexOf('sent you') === -1) amt = -amt;
+        }
+        var isPos = amt >= 0;
         var color = isPos ? 'var(--teal)' : 'var(--red)';
         var prefix = isPos ? '+' : '';
+        var absAmt = Math.abs(amt);
         return '<div class="tx-item">'
           + '<div><div class="tx-name">' + tx.label + '</div>'
           + '<div class="tx-time">' + timeAgo(tx.ts) + '</div></div>'
           + '<div><div class="tx-amount" style="color:' + color + '">'
-          + prefix + tx.amount.toFixed(4) + ' LGC</div></div>'
+          + (absAmt > 0 ? prefix + absAmt.toFixed(4) + ' LGC' : '—') + '</div></div>'
           + '</div>';
       }).join('');
     })
