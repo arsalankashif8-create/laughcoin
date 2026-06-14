@@ -236,7 +236,7 @@ fun WalletScreen(externalBalance: Double = 0.0) {
                 // Extract amount: try stored field first, then parse from message
                 val storedAmt = (tx["amount"] as? Double) ?: 0.0
                 val extractedAmt = if (storedAmt > 0.0) storedAmt else {
-                    val numMatch = Regex("[0-9]+(?:\.[0-9]+)?").findAll(msg).lastOrNull()
+                    val numMatch = Regex("[0-9]+(?:\\.[0-9]+)?").findAll(msg).lastOrNull()
                     numMatch?.value?.toDoubleOrNull() ?: 0.0
                 }
                 val amtStr = if (extractedAmt > 0.0) "${if (isSent) "−" else "+"}${String.format("%.2f", extractedAmt)} LGC" else if (isSent) "−" else "+"
