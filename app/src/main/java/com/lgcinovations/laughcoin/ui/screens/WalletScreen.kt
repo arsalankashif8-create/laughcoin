@@ -35,6 +35,7 @@ fun WalletScreen() {
     var balance by remember { mutableDoubleStateOf(0.0) }
     var walletAddress by remember { mutableStateOf("") }
     var kycStatus by remember { mutableStateOf("unverified") }
+    var transactions by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
 
     LaunchedEffect(uid) {
         if (uid.isNotEmpty()) {
@@ -44,6 +45,23 @@ fun WalletScreen() {
                     kycStatus = snap.getString("kycStatus") ?: "unverified"
                 }
             }
+            // Real-time transaction history
+            db.collection("users").document(uid).collection("notifications")
+                .orderBy("clientTs", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(50)
+                .addSnapshotListener { snap, _ ->
+                    if (snap != null) {
+                        transactions = snap.documents.mapNotNull { doc ->
+                            val type = doc.getString("type") ?: return@mapNotNull null
+                            if (type !in listOf("tip","tip_sent","reward","battle_win","gift","battle_gift","withdrawal")) return@mapNotNull null
+                            mapOf(
+                                "type" to type,
+                                "message" to (doc.getString("message") ?: ""),
+                                "clientTs" to (doc.getLong("clientTs") ?: 0L)
+                            )
+                        }
+                    }
+                }
         }
     }
 
@@ -191,21 +209,37 @@ fun WalletScreen() {
         
         Text("TRANSACTION HISTORY", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
         HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color.White.copy(0.1f))
-        
-        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-                Text("Signup Welcome", color = Color.LightGray, fontSize = 11.sp)
-                Text("Just now", color = Color.Gray, fontSize = 9.sp)
+
+        if (transactions.isEmpty()) {
+            Text("No transactions yet", color = Color.Gray, fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                textAlign = TextAlign.Center)
+        } else {
+            transactions.forEach { tx ->
+                val type = tx["type"] as? String ?: ""
+                val msg = tx["message"] as? String ?: ""
+                val ts = tx["clientTs"] as? Long ?: 0L
+                val isSent = type == "tip_sent" || type == "withdrawal"
+                val icon = when(type) {
+                    "tip" -> "💎"; "tip_sent" -> "📤"; "reward" -> "🟢"
+                    "battle_win" -> "🏆"; "gift","battle_gift" -> "🎁"
+                    "withdrawal" -> "💳"; else -> "🔔"
+                }
+                val color = if (isSent) Color(0xFFFF5F5F) else CyberGreen
+                val timeStr = if (ts > 0) java.text.SimpleDateFormat("MMM dd HH:mm", java.util.Locale.US).format(java.util.Date(ts)) else ""
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(icon, fontSize = 18.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(msg, color = Color.LightGray, fontSize = 11.sp, maxLines = 2)
+                            Text(timeStr, color = Color.Gray, fontSize = 9.sp)
+                        }
+                    }
+                    Text(if (isSent) "−" else "+", color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+                HorizontalDivider(color = Color.White.copy(0.05f))
             }
-            Text("+5.00 LGC", color = CyberGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        }
-        
-        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-                Text("Community Bonus", color = Color.LightGray, fontSize = 11.sp)
-                Text("Just now", color = Color.Gray, fontSize = 9.sp)
-            }
-            Text("+10.00 LGC", color = CyberGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

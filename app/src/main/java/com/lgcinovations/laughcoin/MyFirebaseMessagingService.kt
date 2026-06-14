@@ -72,6 +72,16 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
-        // Save token to Firestore to target specific user later
+        // Save refreshed token to Firestore immediately
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(uid)
+            .update("fcmToken", token)
+            .addOnFailureListener {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("users").document(uid)
+                    .set(hashMapOf("fcmToken" to token),
+                        com.google.firebase.firestore.SetOptions.merge())
+            }
     }
 }

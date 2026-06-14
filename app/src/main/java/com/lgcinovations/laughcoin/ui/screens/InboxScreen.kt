@@ -39,7 +39,7 @@ fun InboxScreen() {
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
             db.collection("users").document(currentUser.uid).collection("notifications")
-                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .orderBy("clientTs", Query.Direction.DESCENDING)
                 .limit(50)
                 .addSnapshotListener { snapshot, _ ->
                     notifications = snapshot?.documents?.mapNotNull { doc ->
@@ -49,10 +49,11 @@ fun InboxScreen() {
                             amount = (doc.getDouble("amount") ?: doc.getLong("amount")?.toDouble() ?: 0.0),
                             message = doc.getString("message") ?: "",
                             timestamp = try {
-                                doc.getTimestamp("timestamp")?.toDate()?.time ?: 0L
-                            } catch (e: Exception) {
-                                doc.getLong("timestamp") ?: 0L
-                            },
+                                doc.getLong("clientTs")
+                                    ?: doc.getTimestamp("ts")?.toDate()?.time
+                                    ?: doc.getTimestamp("timestamp")?.toDate()?.time
+                                    ?: 0L
+                            } catch (e: Exception) { 0L },
                             read = doc.getBoolean("read") ?: false
                         )
                     } ?: emptyList()
@@ -85,12 +86,16 @@ fun InboxScreen() {
 @Composable
 fun NotificationCard(notif: NotificationItem) {
     val (icon, typeLabel, amountColor) = when (notif.type) {
-        "tip" -> Triple("💰", "Tip Received", LgcGold)
-        "reward" -> Triple("🎁", "Reward Earned", Color(0xFF00FF00))
+        "tip" -> Triple("💎", "Tip Received", LgcGold)
+        "tip_sent" -> Triple("📤", "Tip Sent", Color(0xFFFF9800))
+        "reward" -> Triple("🟢", "Reward Earned", Color(0xFF00FF00))
+        "battle_win" -> Triple("🏆", "Battle Won", Color(0xFFFFC107))
         "withdrawal" -> Triple("💳", "Withdrawal", Color(0xFFFF9800))
-        "gift" -> Triple("🎀", "Gift Received", Color(0xFFFF69B4))
+        "gift" -> Triple("🎁", "Gift Received", Color(0xFFFF69B4))
         "battle_gift" -> Triple("⚔️", "Battle Gift", Color(0xFFFF1493))
-        else -> Triple("📬", "Transaction", Color.White)
+        "follow" -> Triple("👥", "New Follower", Color(0xFF00BCD4))
+        "like" -> Triple("❤️", "New Like", Color(0xFFE91E63))
+        else -> Triple("🔔", "Notification", Color.White)
     }
     
     val timeFormat = SimpleDateFormat("MMM dd, HH:mm", Locale.US)

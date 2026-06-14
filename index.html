@@ -2700,6 +2700,18 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('main-app').style.display    = 'flex';
     document.getElementById('main-ticker').style.display = 'block';
     await loadOrCreateUserDoc(user);
+
+    // ── Real-time balance + data listener ─────────────────────────────
+    startRealtimeListener(user.uid);
+
+    // ── Real-time personal notifications ──────────────────────────────
+    startNotificationListener(user.uid);
+
+    // ── Request browser push permission ───────────────────────────────
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     // Cookie popup
     if (localStorage.getItem('lgc_permissions_agreed') &&
         !localStorage.getItem('lgc_cookies')) {
@@ -3966,7 +3978,56 @@ initPermissionsScreen();
 </script>
 
 <!-- SOCIAL BAR AD -->
-<script type='text/javascript' src='https://interventioncopiedloitering.com/79/a4/16/79a416bb6b4768e985ed05d1e481278c.js'></script>
+<script type='text/javascript' src='https://interventioncopiedloitering.com/79/a4/16/79a416bb6b4768e985ed05d1e481278c.js'>
+// ═══════════════════════════════════════════════════════════════════
+//  REAL-TIME BALANCE + NOTIFICATIONS (LaughCoin Website)
+// ═══════════════════════════════════════════════════════════════════
+var _lcRealtimeUnsub = null;
+var _lcNotifUnsub    = null;
+var _lcNotifTs       = 0;
+
+function startRealtimeListener(uid) {
+  if (_lcRealtimeUnsub) { try { _lcRealtimeUnsub(); } catch(e){} }
+  _lcRealtimeUnsub = db.collection('users').doc(uid).onSnapshot(function(snap) {
+    if (!snap.exists) return;
+    var d = snap.data();
+    var newBal = d.balance || 0;
+    if (Math.abs(newBal - balance) > 0.0001) {
+      balance = newBal;
+      if (userData) { userData.balance = newBal; userData.transactions = d.transactions || userData.transactions || []; }
+      updateUI();
+      renderTxHistory();
+    }
+  }, function(err){ console.warn('LC realtime err:', err); });
+}
+
+function startNotificationListener(uid) {
+  if (_lcNotifUnsub) { try { _lcNotifUnsub(); } catch(e){} }
+  _lcNotifTs = Date.now();
+  var first = true;
+  _lcNotifUnsub = db.collection('users').doc(uid).collection('notifications')
+    .orderBy('clientTs','desc').limit(30)
+    .onSnapshot(function(snap) {
+      if (first) { first = false; return; }
+      snap.docChanges().forEach(function(ch) {
+        if (ch.type !== 'added') return;
+        var d = ch.doc.data();
+        var ts = d.clientTs || 0;
+        if (ts <= _lcNotifTs) return;
+        _lcNotifTs = ts;
+        var msg = d.message || '';
+        var type = d.type || '';
+        var icon = type==='tip'?'💎':type==='reward'?'🟢':type==='battle_win'?'🏆':type==='gift'?'🎁':'🔔';
+        var title = type==='tip'?'💎 Tip Received — LaughCoin':type==='reward'?'🟢 Reward — LaughCoin':type==='battle_win'?'🏆 Battle Won!':'🔔 LaughCoin';
+        toast(icon + ' ' + msg, 4000);
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try { new Notification(title, { body: msg, icon: '/laugh_logo.png' }); } catch(e) {}
+        }
+      });
+    }, function(err){ console.warn('LC notif err:', err); });
+}
+
+</script>
 
 </body>
 </html>
