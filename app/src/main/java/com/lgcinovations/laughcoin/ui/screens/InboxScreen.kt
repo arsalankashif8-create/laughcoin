@@ -46,7 +46,15 @@ fun InboxScreen() {
                         NotificationItem(
                             id = doc.id,
                             type = doc.getString("type") ?: "",
-                            amount = (doc.getDouble("amount") ?: doc.getLong("amount")?.toDouble() ?: 0.0),
+                            amount = run {
+                                val direct = doc.getDouble("amount") ?: doc.getLong("amount")?.toDouble()
+                                if (direct != null && direct > 0.0) direct
+                                else {
+                                    val msg = doc.getString("message") ?: ""
+                                    val match = Regex("[0-9]+(?:\\.[0-9]+)?").findAll(msg).lastOrNull()
+                                    match?.value?.toDoubleOrNull() ?: 0.0
+                                }
+                            },
                             message = doc.getString("message") ?: "",
                             timestamp = try {
                                 doc.getLong("clientTs")

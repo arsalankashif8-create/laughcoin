@@ -57,7 +57,8 @@ fun WalletScreen() {
                             mapOf(
                                 "type" to type,
                                 "message" to (doc.getString("message") ?: ""),
-                                "clientTs" to (doc.getLong("clientTs") ?: 0L)
+                                "clientTs" to (doc.getLong("clientTs") ?: 0L),
+                                "amount" to (doc.getDouble("amount") ?: doc.getLong("amount")?.toDouble() ?: 0.0)
                             )
                         }
                     }
@@ -227,8 +228,15 @@ fun WalletScreen() {
                 }
                 val color = if (isSent) Color(0xFFFF5F5F) else CyberGreen
                 val timeStr = if (ts > 0) java.text.SimpleDateFormat("MMM dd HH:mm", java.util.Locale.US).format(java.util.Date(ts)) else ""
+                // Extract amount: try stored field first, then parse from message
+                val storedAmt = (tx["amount"] as? Double) ?: 0.0
+                val extractedAmt = if (storedAmt > 0.0) storedAmt else {
+                    val numMatch = Regex("[0-9]+(?:\.[0-9]+)?").findAll(msg).lastOrNull()
+                    numMatch?.value?.toDoubleOrNull() ?: 0.0
+                }
+                val amtStr = if (extractedAmt > 0.0) "${if (isSent) "−" else "+"}${String.format("%.2f", extractedAmt)} LGC" else if (isSent) "−" else "+"
                 Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Text(icon, fontSize = 18.sp)
                         Spacer(Modifier.width(8.dp))
                         Column {
@@ -236,7 +244,7 @@ fun WalletScreen() {
                             Text(timeStr, color = Color.Gray, fontSize = 9.sp)
                         }
                     }
-                    Text(if (isSent) "−" else "+", color = color, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(amtStr, color = color, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
                 HorizontalDivider(color = Color.White.copy(0.05f))
             }
