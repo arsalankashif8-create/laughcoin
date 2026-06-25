@@ -73,12 +73,19 @@ fun HomeScreen(externalBalance: Double = 0.0) {
                                         ?: d.getString("title") 
                                         ?: d.getString("type") 
                                         ?: "Reward"
-                                    val amt = d.getDouble("amount") 
+                                    // Try amount field first, then parse from message text
+                                    var amt = d.getDouble("amount") 
                                         ?: d.getLong("amount")?.toDouble()
                                         ?: d.getDouble("lgc") 
                                         ?: 0.0
-                                    if (amt > 0 || msg.isNotEmpty()) {
-                                        txns.add(Pair(msg, "+${String.format("%.4f", amt)} LGC"))
+                                    if (amt == 0.0) {
+                                        // Extract number from message e.g. "+5 LGC earned" -> 5.0
+                                        val numMatch = Regex("[0-9]+(?:\\.[0-9]+)?").find(msg)
+                                        amt = numMatch?.value?.toDoubleOrNull() ?: 0.0
+                                    }
+                                    if (msg.isNotEmpty()) {
+                                        val display = if (amt > 0) "+${String.format("%.2f", amt)} LGC" else "✅"
+                                        txns.add(Pair(msg, display))
                                     }
                                 }
                                 if (txns.isNotEmpty()) {
