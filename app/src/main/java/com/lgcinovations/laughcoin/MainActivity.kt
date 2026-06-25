@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
+import com.google.android.gms.ads.MobileAds
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.appcheck.appCheck
@@ -57,6 +58,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Initialize AdMob SDK
+        MobileAds.initialize(this) {}
 
         // Global crash handler — writes crash to a file we can read
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
