@@ -198,6 +198,11 @@ class MainActivity : ComponentActivity() {
 
         setContent { LaughcoinTheme { MainAppScreen() } }
     }
+
+    override fun onResume() {
+        super.onResume()
+        showAppOpenAd()
+    }
 }
 
 sealed class Screen(val route: String, val title: String, val icon: String) {
@@ -814,11 +819,7 @@ fun isYesterday(last: Long, now: Long): Boolean {
     return diff in (24 * 3600000)..(48 * 3600000)
 }
 
-    override fun onResume() {
-        super.onResume()
-        showAppOpenAd()
-    }
-}
+
 
 fun handleReferral(firebaseUser: com.google.firebase.auth.FirebaseUser?, uid: String, inviteCode: String, email: String) {
     val db = FirebaseFirestore.getInstance()
