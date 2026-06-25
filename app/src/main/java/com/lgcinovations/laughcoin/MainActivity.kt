@@ -28,6 +28,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.firebase.Firebase
 import com.google.firebase.Timestamp
 import com.google.firebase.appcheck.appCheck
@@ -55,12 +59,59 @@ import java.util.*
 import android.Manifest
 
 class MainActivity : ComponentActivity() {
+
+    // ── App Open Ad ────────────────────────────────────────────
+    private val appOpenAdUnitId = "ca-app-pub-6392698847275506/6140384006"
+    private var appOpenAd: AppOpenAd? = null
+    private var isLoadingAd = false
+    private var isShowingAd = false
+
+    private fun loadAppOpenAd() {
+        if (isLoadingAd || appOpenAd != null) return
+        isLoadingAd = true
+        AppOpenAd.load(
+            this, appOpenAdUnitId, AdRequest.Builder().build(),
+            object : AppOpenAd.AppOpenAdLoadCallback() {
+                override fun onAdLoaded(ad: AppOpenAd) {
+                    appOpenAd = ad
+                    isLoadingAd = false
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    appOpenAd = null
+                    isLoadingAd = false
+                }
+            }
+        )
+    }
+
+    private fun showAppOpenAd() {
+        val ad = appOpenAd ?: run { loadAppOpenAd(); return }
+        if (isShowingAd) return
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                appOpenAd = null
+                isShowingAd = false
+                loadAppOpenAd() // preload next
+            }
+            override fun onAdFailedToShowFullScreenContent(e: com.google.android.gms.ads.AdError) {
+                appOpenAd = null
+                isShowingAd = false
+            }
+            override fun onAdShowedFullScreenContent() {
+                isShowingAd = true
+            }
+        }
+        isShowingAd = true
+        ad.show(this)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Initialize AdMob SDK
-        MobileAds.initialize(this) {}
+        // Initialize AdMob SDK + load App Open Ad
+        MobileAds.initialize(this) {
+            loadAppOpenAd()
+        }
 
         // Global crash handler — writes crash to a file we can read
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
@@ -828,3 +879,9 @@ LaughCoin uses essential local storage and session tokens to function:
 
 By using this app, you consent to the use of these essential data pieces. We do not use tracking cookies for cross-site advertising.
 """
+
+    override fun onResume() {
+        super.onResume()
+        showAppOpenAd()
+    }
+}
