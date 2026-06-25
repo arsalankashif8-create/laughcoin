@@ -39,7 +39,6 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import kotlinx.coroutines.isActive
@@ -147,9 +146,8 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
         }
     }
 
-    // Initialize AdMob and preload ad
+    // Preload AdMob Rewarded Interstitial
     LaunchedEffect(Unit) {
-        MobileAds.initialize(context) {}
         loadRewardedAd()
     }
 
