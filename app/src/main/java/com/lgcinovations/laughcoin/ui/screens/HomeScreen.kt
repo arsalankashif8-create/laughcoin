@@ -47,6 +47,7 @@ fun HomeScreen(externalBalance: Double = 0.0) {
     // Sync whenever globalBalance from MainAppScreen updates
     LaunchedEffect(externalBalance) { if (externalBalance > 0.0) balance = externalBalance }
     var totalRewards by remember { mutableDoubleStateOf(0.0) }
+    var recentTxns by remember { mutableStateOf(listOf<Pair<String,String>>()) }
     var taps by remember { mutableLongStateOf(0L) }
     var level by remember { mutableIntStateOf(1) }
     var referrals by remember { mutableIntStateOf(0) }
@@ -60,6 +61,19 @@ fun HomeScreen(externalBalance: Double = 0.0) {
                 if (snap != null && snap.exists()) {
                     balance = snap.getDouble("balance") ?: 0.0
                     val dbTotal = snap.getDouble("totalRewards") ?: balance
+                        // Load recent notifications as transactions
+                        db.collection("users").document(uid)
+                            .collection("notifications")
+                            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                            .limit(5)
+                            .get()
+                            .addOnSuccessListener { docs ->
+                                recentTxns = docs.map { d ->
+                                    val msg = d.getString("message") ?: "Reward"
+                                    val amt = d.getDouble("amount") ?: 0.0
+                                    Pair(msg, "+${String.format("%.4f", amt)} LGC")
+                                }
+                            }
                     totalRewards = if (dbTotal < balance) {
                         db.collection("users").document(uid).update("totalRewards", balance)
                         balance
@@ -270,9 +284,13 @@ fun HomeScreen(externalBalance: Double = 0.0) {
                 Column(Modifier.padding(16.dp)) {
                     Text("📋 RECENT REWARDS", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
-                    TransactionItem("Daily Login Bonus", "+1.0000 LGC")
-                    TransactionItem("Welcome Signup Bonus", "+5.0000 LGC")
-                    TransactionItem("Referral Gift Bonus", "+5.0000 LGC")
+                    if (recentTxns.isEmpty()) {
+                        Text("No transactions yet", color = Color.Gray, fontSize = 11.sp)
+                    } else {
+                        recentTxns.forEach { txn ->
+                            TransactionItem(txn.first, txn.second)
+                        }
+                    }
                 }
             }
             
