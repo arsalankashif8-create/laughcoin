@@ -32,13 +32,16 @@ import com.lgcinovations.laughcoin.formatTime
 import com.lgcinovations.laughcoin.isYesterday
 import com.lgcinovations.laughcoin.ui.theme.*
 import kotlinx.coroutines.delay
+import android.app.Activity
+import androidx.core.net.toUri
+import android.content.Intent
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.appopen.AppOpenAd
-import com.google.android.gms.ads.rewarded.RewardedInterstitialAd
-import com.google.android.gms.ads.rewarded.RewardedInterstitialAdLoadCallback
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import kotlinx.coroutines.isActive
 import java.util.*
 import kotlin.math.min
@@ -56,7 +59,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var tapCount by remember { mutableIntStateOf(0) }
     var adType by remember { mutableStateOf("") }
-    var rewardedAd by remember { mutableStateOf<RewardedInterstitialAd?>(null) }
+    var rewardedAd: RewardedInterstitialAd? by remember { mutableStateOf(null) }
     var sessionEarnings by remember { mutableDoubleStateOf(0.0) }
     var unSyncedEarnings by remember { mutableDoubleStateOf(0.0) }
     val floatingEmojis = remember { mutableStateListOf<EmojiState>() }
@@ -101,12 +104,14 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     // Load AdMob Rewarded Interstitial
     fun loadRewardedAd() {
         RewardedInterstitialAd.load(
-            context, rewardedAdUnitId, AdRequest.Builder().build(),
+            context,
+            rewardedAdUnitId,
+            AdRequest.Builder().build(),
             object : RewardedInterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: RewardedInterstitialAd) {
-                    rewardedAd = ad
+                override fun onAdLoaded(p0: RewardedInterstitialAd) {
+                    rewardedAd = p0
                 }
-                override fun onAdFailedToLoad(err: LoadAdError) {
+                override fun onAdFailedToLoad(p0: LoadAdError) {
                     rewardedAd = null
                 }
             }
@@ -130,7 +135,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             }
             val activity = context as? android.app.Activity
             if (activity != null) {
-                ad.show(activity) { _ ->
+                ad.show(activity) { rewardItem ->
                     // User earned reward — give LGC
                     onAdRewardEarned(type)
                 }
@@ -142,8 +147,11 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
         }
     }
 
-    // Preload AdMob ad on screen open
-    LaunchedEffect(Unit) { loadRewardedAd() }
+    // Initialize AdMob and preload ad
+    LaunchedEffect(Unit) {
+        MobileAds.initialize(context) {}
+        loadRewardedAd()
+    }
 
     LaunchedEffect(Unit) { 
         while(isActive) { 
