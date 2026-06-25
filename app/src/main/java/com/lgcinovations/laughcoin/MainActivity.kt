@@ -61,7 +61,7 @@ import android.Manifest
 class MainActivity : ComponentActivity() {
 
     // ── App Open Ad ────────────────────────────────────────────
-    private val appOpenAdUnitId = "ca-app-pub-6392698847275506/6140384006"
+    private val appOpenAdUnitId = "ca-app-pub-8306244200577451/5982682898"
     private var appOpenAd: AppOpenAd? = null
     private var isLoadingAd = false
     private var isShowingAd = false
