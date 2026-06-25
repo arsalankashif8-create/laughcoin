@@ -44,6 +44,12 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <!-- AdMob App ID - REQUIRED -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-6392698847275506~1327845957"/>
+
     </application>
 
 </manifest>
