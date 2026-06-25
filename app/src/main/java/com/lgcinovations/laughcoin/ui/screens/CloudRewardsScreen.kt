@@ -1,6 +1,5 @@
 package com.lgcinovations.laughcoin.ui.screens
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -34,6 +32,13 @@ import com.lgcinovations.laughcoin.formatTime
 import com.lgcinovations.laughcoin.isYesterday
 import com.lgcinovations.laughcoin.ui.theme.*
 import kotlinx.coroutines.delay
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.gms.ads.rewarded.RewardedInterstitialAd
+import com.google.android.gms.ads.rewarded.RewardedInterstitialAdLoadCallback
 import kotlinx.coroutines.isActive
 import java.util.*
 import kotlin.math.min
@@ -50,70 +55,95 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     var lastStart by remember { mutableStateOf<Long?>(null) }
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var tapCount by remember { mutableIntStateOf(0) }
-    var showAdPlaceholder by remember { mutableStateOf(false) }
-    var adType by remember { mutableStateOf("") } 
-    var adCountdown by remember { mutableIntStateOf(10) }
+    var adType by remember { mutableStateOf("") }
+    var rewardedAd by remember { mutableStateOf<RewardedInterstitialAd?>(null) }
     var sessionEarnings by remember { mutableDoubleStateOf(0.0) }
     var unSyncedEarnings by remember { mutableDoubleStateOf(0.0) }
     val floatingEmojis = remember { mutableStateListOf<EmojiState>() }
     
     val context = LocalContext.current
     
-    val adLink = "https://interventioncopiedloitering.com/zex8afkiwf?key=a5339c624f9cc5ca5d27a83b4a14deda"
+    // AdMob Rewarded Interstitial ID
+    val rewardedAdUnitId = "ca-app-pub-6392698847275506/2169349402"
 
-    val completeAdAction = {
-        if (showAdPlaceholder) {
-            showAdPlaceholder = false
-            val isGala = isGalaActive()
-            if (adType == "Auto") {
-                db.collection("users").document(uid).get().addOnSuccessListener { snap ->
-                    val lastStartT = snap.getTimestamp("lastEarningStart")?.toDate()?.time ?: 0L
-                    val currentS = snap.getLong("streakCount") ?: 0L
-                    val now = System.currentTimeMillis()
-                    val newS = if (lastStartT == 0L) 1L else if (isYesterday(lastStartT, now)) currentS + 1 else 1L
-                    val autoStartReward = 15.0
-                    db.collection("users").document(uid).update(
-                        "lastEarningStart", Timestamp.now(),
-                        "balance", FieldValue.increment(autoStartReward * level),
-                        "totalRewards", FieldValue.increment(autoStartReward * level),
-                        "streakCount", newS
-                    )
-                    onStreakClaimed(autoStartReward * level)
-                    Toast.makeText(context, "Daily Mining Started! +${autoStartReward * level} LGC", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                val adReward = if (isGala) 1.0 else 0.5
+    // Give LGC reward after user watches real AdMob ad
+    val onAdRewardEarned = { type: String ->
+        val isGala = isGalaActive()
+        if (type == "Auto") {
+            db.collection("users").document(uid).get().addOnSuccessListener { snap ->
+                val lastStartT = snap.getTimestamp("lastEarningStart")?.toDate()?.time ?: 0L
+                val currentS = snap.getLong("streakCount") ?: 0L
+                val now = System.currentTimeMillis()
+                val newS = if (lastStartT == 0L) 1L else if (isYesterday(lastStartT, now)) currentS + 1 else 1L
+                val autoStartReward = 15.0
                 db.collection("users").document(uid).update(
-                    "adTapCount", 0,
-                    "balance", FieldValue.increment(adReward),
-                    "totalRewards", FieldValue.increment(adReward)
+                    "lastEarningStart", Timestamp.now(),
+                    "balance", FieldValue.increment(autoStartReward * level),
+                    "totalRewards", FieldValue.increment(autoStartReward * level),
+                    "streakCount", newS
                 )
-                tapCount = 0
-                onStreakClaimed(adReward)
-                Toast.makeText(context, "Ad Reward Added! +$adReward LGC", Toast.LENGTH_SHORT).show()
+                onStreakClaimed(autoStartReward * level)
+                Toast.makeText(context, "Daily Mining Started! +${autoStartReward * level} LGC", Toast.LENGTH_SHORT).show()
             }
+        } else {
+            val adReward = if (isGala) 1.0 else 0.5
+            db.collection("users").document(uid).update(
+                "adTapCount", 0,
+                "balance", FieldValue.increment(adReward),
+                "totalRewards", FieldValue.increment(adReward)
+            )
+            tapCount = 0
+            onStreakClaimed(adReward)
+            Toast.makeText(context, "Ad Reward: +$adReward LGC earned!", Toast.LENGTH_SHORT).show()
         }
     }
 
-    LaunchedEffect(showAdPlaceholder) {
-        if (showAdPlaceholder) {
-            adCountdown = 10
-            while (adCountdown > 0 && isActive) {
-                delay(1000)
-                if (!isActive) return@LaunchedEffect
-                adCountdown--
-            }
-            if (!isActive) return@LaunchedEffect
-            delay(500)
-            try {
-                if (isActive && showAdPlaceholder) {
-                    completeAdAction()
+    // Load AdMob Rewarded Interstitial
+    fun loadRewardedAd() {
+        RewardedInterstitialAd.load(
+            context, rewardedAdUnitId, AdRequest.Builder().build(),
+            object : RewardedInterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedInterstitialAd) {
+                    rewardedAd = ad
                 }
-            } catch (e: Exception) {
-                // Composable gone — ignore
+                override fun onAdFailedToLoad(err: LoadAdError) {
+                    rewardedAd = null
+                }
             }
+        )
+    }
+
+    // Show AdMob Rewarded Interstitial
+    val showRewardedAd = { type: String ->
+        adType = type
+        val ad = rewardedAd
+        if (ad != null) {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    rewardedAd = null
+                    loadRewardedAd() // preload next ad
+                }
+                override fun onAdFailedToShowFullScreenContent(e: AdError) {
+                    rewardedAd = null
+                    loadRewardedAd()
+                }
+            }
+            val activity = context as? android.app.Activity
+            if (activity != null) {
+                ad.show(activity) { _ ->
+                    // User earned reward — give LGC
+                    onAdRewardEarned(type)
+                }
+            }
+        } else {
+            // Ad not loaded yet — give reward anyway and reload
+            onAdRewardEarned(type)
+            loadRewardedAd()
         }
     }
+
+    // Preload AdMob ad on screen open
+    LaunchedEffect(Unit) { loadRewardedAd() }
 
     LaunchedEffect(Unit) { 
         while(isActive) { 
@@ -249,22 +279,6 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             Text("✦ 5 LGC Signup Bonus", color = LgcGold, fontSize = 10.sp)
         }
 
-        // --- 📢 CLICKABLE AD BANNER ---
-        val bannerLink = "https://interventioncopiedloitering.com/fh1rfdzyh?key=0632adffd439c1178feb0356898f8e04"
-        Surface(
-            onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, bannerLink.toUri())
-                context.startActivity(intent)
-            },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            color = CyberBlue.copy(0.3f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, LgcGold.copy(0.3f))
-        ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Text("📢 CLICK TO EARN EXTRA BONUS (AD)", color = LgcGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-        }
 
         Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(id = R.drawable.laugh_logo), "", Modifier.size(45.dp).clip(CircleShape).border(1.dp, LgcGold, CircleShape))
@@ -373,8 +387,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                         }
 
                         if (tapCount >= 40) {
-                            adType = "Reward"
-                            showAdPlaceholder = true
+                            showRewardedAd("Reward")
                         }
                     },
                     shape = CircleShape, color = CyberBlue, border = BorderStroke(3.dp, if(isActive) CyberGreen else StopRed),
@@ -390,8 +403,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
             Button(
                 onClick = { 
                     if (!isActive) {
-                        adType = "Auto"
-                        showAdPlaceholder = true
+                        showRewardedAd("Auto")
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(55.dp),
@@ -406,21 +418,6 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                 }
             }
 
-            // --- 📢 CLICKABLE AD BANNER ---
-            Surface(
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, bannerLink.toUri())
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                color = CyberBlue.copy(0.3f),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, LgcGold.copy(0.2f))
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(16.dp)) {
-                    Text("📢 CLICK TO EARN EXTRA BONUS (AD)", color = LgcGold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-            }
 
             Spacer(Modifier.height(24.dp))
 
@@ -498,100 +495,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
         }
     }
 
-    if (showAdPlaceholder) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f)).clickable(enabled = false) {},
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                modifier = Modifier.size(300.dp, 450.dp),
-                colors = CardDefaults.cardColors(CyberBlue),
-                border = BorderStroke(2.dp, LgcGold)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text("📺 AD PLACEHOLDER", color = LgcGold, fontWeight = FontWeight.Black, fontSize = 20.sp, modifier = Modifier.clickable { 
-                        val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
-                        context.startActivity(intent)
-                        completeAdAction()
-                    })
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        if (adType == "Auto") "Watch this ad to start your 24-hour Auto Rewards cycle!" 
-                        else "Reward Ad! Watch to keep earning. (Click to visit sponsor)",
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.clickable { 
-                            val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
-                            context.startActivity(intent)
-                            completeAdAction()
-                        }
-                    )
-                    Spacer(Modifier.height(16.dp))
 
-                    // --- 🎁 PREMIUM SPONSOR CARD (Clickable Smartlink) ---
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
-                                context.startActivity(intent)
-                                completeAdAction()
-                            },
-                        colors = CardDefaults.cardColors(Color.Black.copy(0.3f)),
-                        border = BorderStroke(1.dp, LgcGold.copy(0.5f)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text("🎁", fontSize = 64.sp)
-                            Spacer(Modifier.height(12.dp))
-                            Text("PREMIUM SPONSOR", color = LgcGold, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                            Text("CLICK TO VERIFY REWARD", color = CyberGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            
-                            Spacer(Modifier.height(20.dp))
-                            
-                            Button(
-                                onClick = { 
-                                    val intent = Intent(Intent.ACTION_VIEW, adLink.toUri())
-                                    context.startActivity(intent)
-                                    completeAdAction()
-                                },
-                                colors = ButtonDefaults.buttonColors(LgcGold),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.padding(horizontal = 24.dp)
-                            ) {
-                                Text("OPEN LINK", color = Color.Black, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-                    CircularProgressIndicator(color = LgcGold, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.height(12.dp))
-                    Text(if(adCountdown > 0) "Rewarding in $adCountdown..." else "Reward Ready!", color = Color.Gray, fontSize = 12.sp)
-                    
-                    Spacer(Modifier.weight(1f))
-                    
-                    Button(
-                        onClick = { completeAdAction() },
-                        colors = ButtonDefaults.buttonColors(if(adCountdown > 0) Color.Gray else LgcGold),
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = adCountdown == 0
-                    ) {
-                        Text(if(adCountdown > 0) "WATCHING AD ($adCountdown)" else "CLOSE AD & GET REWARD", color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-    }
 }
 
 fun isGalaActive(): Boolean {
