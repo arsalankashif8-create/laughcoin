@@ -50,22 +50,31 @@ fun WalletScreen(externalBalance: Double = 0.0) {
                     kycStatus = snap.getString("kycStatus") ?: "unverified"
                 }
             }
-            // Real-time transaction history
+            // Real-time transaction history - accept all notifications
             db.collection("users").document(uid).collection("notifications")
-                .orderBy("clientTs", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(50)
                 .addSnapshotListener { snap, _ ->
                     if (snap != null) {
                         transactions = snap.documents.mapNotNull { doc ->
-                            val type = doc.getString("type") ?: return@mapNotNull null
-                            if (type !in listOf("tip","tip_sent","reward","battle_win","gift","battle_gift","withdrawal")) return@mapNotNull null
+                            val type = doc.getString("type") ?: "reward"
+                            val msg  = doc.getString("message") 
+                                ?: doc.getString("title") 
+                                ?: type
+                            val amt  = doc.getDouble("amount") 
+                                ?: doc.getLong("amount")?.toDouble() 
+                                ?: doc.getDouble("lgc") 
+                                ?: 0.0
+                            val ts   = doc.getLong("clientTs") 
+                                ?: doc.getLong("timestamp")
+                                ?: doc.getTimestamp("timestamp")?.toDate()?.time
+                                ?: 0L
                             mapOf(
-                                "type" to type,
-                                "message" to (doc.getString("message") ?: ""),
-                                "clientTs" to (doc.getLong("clientTs") ?: 0L),
-                                "amount" to (doc.getDouble("amount") ?: doc.getLong("amount")?.toDouble() ?: 0.0)
+                                "type"     to type,
+                                "message"  to msg,
+                                "clientTs" to ts,
+                                "amount"   to amt
                             )
-                        }
+                        }.sortedByDescending { it["clientTs"] as Long }
                     }
                 }
         }
