@@ -814,6 +814,12 @@ fun isYesterday(last: Long, now: Long): Boolean {
     return diff in (24 * 3600000)..(48 * 3600000)
 }
 
+    override fun onResume() {
+        super.onResume()
+        showAppOpenAd()
+    }
+}
+
 fun handleReferral(firebaseUser: com.google.firebase.auth.FirebaseUser?, uid: String, inviteCode: String, email: String) {
     val db = FirebaseFirestore.getInstance()
     val username = firebaseUser?.displayName ?: email.split("@")[0]
@@ -879,9 +885,3 @@ LaughCoin uses essential local storage and session tokens to function:
 
 By using this app, you consent to the use of these essential data pieces. We do not use tracking cookies for cross-site advertising.
 """
-
-    override fun onResume() {
-        super.onResume()
-        showAppOpenAd()
-    }
-}
