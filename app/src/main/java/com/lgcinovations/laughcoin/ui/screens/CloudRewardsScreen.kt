@@ -66,7 +66,7 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
     val context = LocalContext.current
     
     // AdMob Rewarded Interstitial ID
-    val rewardedAdUnitId = "ca-app-pub-6392698847275506/2169349402"
+    val rewardedAdUnitId = "ca-app-pub-8306244200577451/8333935522"
 
     // Give LGC reward after user watches real AdMob ad
     val onAdRewardEarned = { type: String ->
