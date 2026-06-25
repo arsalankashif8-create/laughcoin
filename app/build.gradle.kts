@@ -92,6 +92,7 @@ dependencies {
 
     // Google Sign-In (classic — reliable with release SHA-1)
     implementation("com.google.android.gms:play-services-auth:21.3.0")
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
