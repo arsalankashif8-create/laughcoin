@@ -61,39 +61,45 @@ fun HomeScreen(externalBalance: Double = 0.0) {
                 if (snap != null && snap.exists()) {
                     balance = snap.getDouble("balance") ?: 0.0
                     val dbTotal = snap.getDouble("totalRewards") ?: balance
-                        // Load recent rewards from notifications subcollection
+                        // Load recent rewards - try multiple field names for compatibility
                         db.collection("users").document(uid)
                             .collection("notifications")
-                            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                            .limit(5)
+                            .limit(10)
                             .get()
                             .addOnSuccessListener { docs ->
-                                if (!docs.isEmpty) {
-                                    recentTxns = docs.map { d ->
-                                        val msg = d.getString("message") ?: d.getString("title") ?: "Reward"
-                                        val amt = d.getDouble("amount") ?: d.getDouble("lgc") ?: 0.0
-                                        Pair(msg, "+${String.format("%.4f", amt)} LGC")
+                                val txns = mutableListOf<Pair<String,String>>()
+                                for (d in docs) {
+                                    val msg = d.getString("message") 
+                                        ?: d.getString("title") 
+                                        ?: d.getString("type") 
+                                        ?: "Reward"
+                                    val amt = d.getDouble("amount") 
+                                        ?: d.getLong("amount")?.toDouble()
+                                        ?: d.getDouble("lgc") 
+                                        ?: 0.0
+                                    if (amt > 0 || msg.isNotEmpty()) {
+                                        txns.add(Pair(msg, "+${String.format("%.4f", amt)} LGC"))
                                     }
+                                }
+                                if (txns.isNotEmpty()) {
+                                    recentTxns = txns.take(5)
                                 } else {
-                                    // Fallback: build from user doc fields
-                                    val txns = mutableListOf<Pair<String,String>>()
-                                    val b = snap.getDouble("balance") ?: 0.0
-                                    val signupBonus = snap.getDouble("signupBonus") ?: 0.0
-                                    val loginBonus  = snap.getDouble("loginBonus")  ?: 0.0
-                                    val refBonus    = snap.getDouble("referralBonus") ?: 0.0
-                                    if (b > 0)          txns.add(Pair("💰 Current Balance",     "+${String.format("%.4f", b)} LGC"))
-                                    if (signupBonus > 0) txns.add(Pair("🎁 Signup Bonus",       "+${String.format("%.4f", signupBonus)} LGC"))
-                                    if (loginBonus > 0)  txns.add(Pair("📅 Daily Login Bonus",  "+${String.format("%.4f", loginBonus)} LGC"))
-                                    if (refBonus > 0)    txns.add(Pair("👥 Referral Bonus",     "+${String.format("%.4f", refBonus)} LGC"))
-                                    if (txns.isEmpty())  txns.add(Pair("⛏️ Mining Active",      "Keep tapping!"))
-                                    recentTxns = txns
+                                    // Fallback from user doc
+                                    val b   = snap.getDouble("balance") ?: 0.0
+                                    val ref = snap.getDouble("referralBonus") ?: 0.0
+                                    val day = snap.getDouble("loginBonus") ?: 0.0
+                                    val built = mutableListOf<Pair<String,String>>()
+                                    if (b > 0)   built.add(Pair("💰 Current Balance", "+${String.format("%.4f", b)} LGC"))
+                                    if (ref > 0) built.add(Pair("👥 Referral Bonus",  "+${String.format("%.4f", ref)} LGC"))
+                                    if (day > 0) built.add(Pair("📅 Daily Bonus",     "+${String.format("%.4f", day)} LGC"))
+                                    built.add(Pair("⛏️ Keep Mining!", "Tap the logo to earn"))
+                                    recentTxns = built
                                 }
                             }
                             .addOnFailureListener {
-                                // If query fails show balance info
                                 val b = snap.getDouble("balance") ?: 0.0
                                 recentTxns = listOf(
-                                    Pair("💰 Total Balance", "+${String.format("%.4f", b)} LGC"),
+                                    Pair("💰 Balance", "+${String.format("%.4f", b)} LGC"),
                                     Pair("⛏️ Keep Mining!", "Tap to earn more LGC")
                                 )
                             }
