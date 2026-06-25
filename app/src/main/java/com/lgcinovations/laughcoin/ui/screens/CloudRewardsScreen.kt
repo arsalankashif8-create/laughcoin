@@ -140,8 +140,8 @@ fun CloudRewardsScreen(onStreakClaimed: (Double) -> Unit) {
                 }
             }
         } else {
-            // Ad not loaded yet — give reward anyway and reload
-            onAdRewardEarned(type)
+            // Ad not loaded yet — show message and try to load
+            Toast.makeText(context, "⏳ Loading ad... please try again in a moment!", Toast.LENGTH_SHORT).show()
             loadRewardedAd()
         }
     }
