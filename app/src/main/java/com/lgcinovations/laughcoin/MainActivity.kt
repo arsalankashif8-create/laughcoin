@@ -2,7 +2,6 @@ package com.lgcinovations.laughcoin
 
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.app.PictureInPictureParams
 import android.content.res.Configuration
 import android.os.Build
